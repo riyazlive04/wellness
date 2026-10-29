@@ -1760,6 +1760,8 @@ model workspaces {
   pan                       String?
   pdf_contact_line          String?
   pdf_footer_note           String?
+  /// The practice's default invoice terms, copied onto each new invoice.
+  invoice_terms             String?
   created_at                DateTime                    @default(now()) @db.Timestamptz(6)
   updated_at                DateTime                    @default(now()) @db.Timestamptz(6)
   organization_id           String?                     @db.Uuid

@@ -39,6 +39,7 @@ export interface WorkspaceSummary {
   pan: string | null;
   pdf_contact_line: string | null;
   pdf_footer_note: string | null;
+  invoice_terms: string | null;
   created_at: Date;
   updated_at: Date;
 }

@@ -25,6 +25,7 @@ export interface Workspace {
   pan: string | null;
   pdf_contact_line: string | null;
   pdf_footer_note: string | null;
+  invoice_terms: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -85,6 +86,8 @@ export interface WorkspaceBranding {
   pdf_contact_line?: string | null;
   /** Footer note / disclaimer for PDFs. */
   pdf_footer_note?: string | null;
+  /** Default terms copied onto each new invoice. */
+  invoice_terms?: string | null;
   white_label: boolean;
   /** True when this workspace's practitioner credentials are verified. */
   verified?: boolean;
@@ -97,6 +100,7 @@ export interface UpdateBrandingPayload {
   tagline?: string;
   pdf_contact_line?: string;
   pdf_footer_note?: string;
+  invoice_terms?: string;
   white_label?: boolean;
 }
 

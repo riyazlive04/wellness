@@ -118,6 +118,7 @@ export class WorkspacesController {
           [ws.contact_phone, ws.contact_email].filter(Boolean).join('  ·  ') ||
           null,
         pdf_footer_note: ws.pdf_footer_note,
+        invoice_terms: ws.invoice_terms,
         // Render-side enforcement: only report white-label if the plan still
         // allows it OR the white_label add-on is active, so a downgrade
         // auto-restores NUSI branding but a paying add-on customer keeps

@@ -26,6 +26,7 @@ export function BrandingSection() {
   // composed contact fallback) once it loads — see the hydration effect below.
   const [pdfContact, setPdfContact] = useState('');
   const [pdfFooter, setPdfFooter] = useState('');
+  const [invoiceTerms, setInvoiceTerms] = useState('');
 
   // Plan + current white-label flag drive the real, gated toggle.
   const wsQ = useQuery({ queryKey: ['workspace', 'me'], queryFn: () => workspacesApi.me() });
@@ -54,6 +55,7 @@ export function BrandingSection() {
     hydrated.current = true;
     setPdfContact(wsQ.data.pdf_contact_line ?? '');
     setPdfFooter(wsQ.data.pdf_footer_note ?? '');
+    setInvoiceTerms(wsQ.data.invoice_terms ?? '');
   }, [wsQ.data]);
 
   const palette =
@@ -74,6 +76,7 @@ export function BrandingSection() {
       await workspacesApi.updateBranding({
         pdf_contact_line: pdfContact.trim(),
         pdf_footer_note: pdfFooter.trim(),
+        invoice_terms: invoiceTerms.trim(),
       });
       qc.invalidateQueries({ queryKey: ['workspace', 'branding'] });
       qc.invalidateQueries({ queryKey: ['workspace', 'me'] });
@@ -211,8 +214,8 @@ export function BrandingSection() {
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">PDF documents</div>
         </div>
         <p className="mt-1.5 text-[11px] text-foreground/70 dark:text-foreground/55">
-          Your logo and brand colours already appear on every export. Add a contact line and a
-          footer note to finish the template.
+          Your logo and brand colours already appear on every export. Add a contact line, a
+          footer note and your invoice terms to finish the template.
         </p>
 
         <div className="mt-4 space-y-4">
@@ -242,6 +245,27 @@ export function BrandingSection() {
             />
             <div className="mt-1 text-[11px] text-foreground/60 dark:text-foreground/50">
               Printed at the bottom of every page (above the invoice's legal line).
+            </div>
+          </label>
+
+          {/* Invoice terms. Here rather than on the invoice form because they
+              are typed once and reused: each new invoice takes its own copy,
+              so editing this never rewrites one already issued. */}
+          <label className="block">
+            <div className="text-[11px] font-semibold text-foreground/75 dark:text-foreground/60">
+              Invoice terms &amp; conditions
+            </div>
+            <textarea
+              value={invoiceTerms}
+              onChange={(e) => setInvoiceTerms(e.target.value)}
+              placeholder="e.g. Payment is due within 14 days of the invoice date. Sessions cancelled with less than 24 hours' notice may be charged."
+              maxLength={4000}
+              rows={3}
+              className="mt-1.5 w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04] focus:outline-none"
+            />
+            <div className="mt-1 text-[11px] text-foreground/60 dark:text-foreground/50">
+              Copied onto each new invoice. Changing it here leaves invoices you
+              have already sent exactly as they were.
             </div>
           </label>
         </div>

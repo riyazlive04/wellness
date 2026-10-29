@@ -40,6 +40,12 @@ export class UpdateWorkspaceDto {
   @IsOptional() @IsString() @MaxLength(200) pdf_contact_line?: string;
   /** PDF footer note / disclaimer, printed above the page number. */
   @IsOptional() @IsString() @MaxLength(400) pdf_footer_note?: string;
+  /**
+   * Default invoice terms, copied onto each new invoice. Editing this never
+   * rewrites invoices already issued - each keeps its own copy.
+   * 4000 to match practice_invoices.terms.
+   */
+  @IsOptional() @IsString() @MaxLength(4000) invoice_terms?: string;
 
   /** super_admin only (the controller rejects it for owners); plans are bought in Billing. */
   @IsOptional()
