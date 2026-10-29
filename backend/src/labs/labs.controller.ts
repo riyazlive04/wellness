@@ -44,8 +44,16 @@ class UpdateLabDto {
 
 /** One self-measured reading: which marker, and the number off the meter. */
 class SelfReadingDto {
-  @IsIn(['fbs', 'ppbs_meal1', 'ppbs_meal2']) markerCode!: string;
-  @IsNumber() value!: number;
+  @IsIn(['fbs', 'ppbs_meal1', 'ppbs_meal2'], {
+    // The default message prints the raw allowlist at a client, who has no
+    // idea what 'ppbs_meal1' is. The UI only ever sends these three, so
+    // reaching this means something is wrong rather than mistyped.
+    message: 'That is not a reading you can log yourself.',
+  })
+  markerCode!: string;
+
+  @IsNumber({}, { message: 'Enter the number from your meter.' })
+  value!: number;
 }
 
 class LogSelfReadingsDto {
