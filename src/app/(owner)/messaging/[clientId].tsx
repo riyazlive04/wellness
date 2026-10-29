@@ -37,6 +37,39 @@ import { font, radius, spacing } from '@/lib/theme';
 
 const REACTIONS = ['👍', '❤️', '🎉', '💪', '🙏'];
 
+/**
+ * The high-water mark for an incremental poll: the newest change held.
+ *
+ * `updated_at`, not `created_at` — an old message edited a moment ago is the
+ * real cursor, and a created_at cursor would stop delivering edits, reactions,
+ * pins and deletes forever. Returns undefined when any row lacks it (an older
+ * server), which asks for the full thread and keeps working.
+ *
+ * Duplicated from the web app rather than shared: the two are separate repos
+ * with no common package, and the server contract is the thing that binds them.
+ */
+function cursorOf(held?: ThreadMessage[]): string | undefined {
+  if (!held?.length) return undefined;
+  let max: string | undefined;
+  for (const m of held) {
+    if (!m.updated_at) return undefined;
+    if (!max || m.updated_at > max) max = m.updated_at;
+  }
+  return max;
+}
+
+/**
+ * Apply a delta to the thread on screen: replace by id, append what is new,
+ * and re-sort by `created_at`. Never by updated_at — that would jump an edited
+ * message to the bottom and read as a reply nobody sent.
+ */
+function mergeThread(held: ThreadMessage[], delta: ThreadMessage[]): ThreadMessage[] {
+  if (!delta.length) return held;
+  const byId = new Map(held.map((m) => [m.id, m]));
+  for (const m of delta) byId.set(m.id, m);
+  return [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
+}
+
 export default function OwnerThread() {
   const { clientId } = useLocalSearchParams<{ clientId: string }>();
   const id = String(clientId);
@@ -52,9 +85,25 @@ export default function OwnerThread() {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const listRef = useRef<FlatList<ThreadMessage>>(null);
 
+  /**
+   * The thread, polled incrementally.
+   *
+   * It used to re-download every message every 8 seconds to learn that nothing
+   * had changed - and with attachments inlined as base64 that was close to a
+   * megabyte each time, on the practitioner's own mobile data. Now it sends
+   * the newest `updated_at` it holds and only changed rows come back.
+   */
   const threadQ = useQuery({
     queryKey: ['messaging', 'thread', id],
-    queryFn: () => ownerClientsApi.clientThread(id),
+    queryFn: async () => {
+      const held = qc.getQueryData<ThreadMessage[]>(['messaging', 'thread', id]);
+      const since = cursorOf(held);
+      const delta = await ownerClientsApi.clientThread(id, 200, since);
+      // Without a cursor the response IS the thread; with one it is a patch,
+      // and treating a patch as the whole thread would blank the conversation
+      // on the first quiet poll.
+      return since ? mergeThread(held ?? [], delta) : delta;
+    },
     refetchInterval: 8_000,
     enabled: !!id,
   });

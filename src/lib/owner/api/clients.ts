@@ -623,6 +623,12 @@ export interface ThreadMessage {
   content: string;
   is_read: boolean;
   created_at: string;
+  /**
+   * Last change of any kind — an edit, reaction, pin or delete, not just the
+   * send. The cursor an incremental poll advances on. Optional because an
+   * older server omits it, which falls back to a full fetch.
+   */
+  updated_at?: string;
   metadata?: MessageMeta | null;
   attachment_url?: string | null;
   attachment_name?: string | null;
@@ -791,8 +797,9 @@ export const ownerClientsApi = {
   // Workspace-admin messaging
   listConversations: () =>
     api.get<ConversationSummary[]>('/api/v1/workspaces/me/clients/conversations'),
-  clientThread: (clientId: string, limit = 200) =>
-    api.get<ThreadMessage[]>(`/api/v1/workspaces/me/clients/${clientId}/messages${buildQs({ limit })}`),
+  /** `since` (an ISO updated_at) returns only changed messages — an incremental poll. */
+  clientThread: (clientId: string, limit = 200, since?: string) =>
+    api.get<ThreadMessage[]>(`/api/v1/workspaces/me/clients/${clientId}/messages${buildQs({ limit, since })}`),
   sendToClient: (clientId: string, opts: { content?: string; attachment?: MsgAttachment; replyTo?: string; scheduledFor?: string }) =>
     api.post<ThreadMessage>(`/api/v1/workspaces/me/clients/${clientId}/messages`, { body: opts }),
   markClientThreadRead: (clientId: string) =>

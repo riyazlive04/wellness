@@ -25,7 +25,14 @@ import { clientsApi, type ClientMessage } from '@/lib/clients-api';
 import { brand, radius, spacing } from '@/lib/theme';
 
 const TAB_BAR_HEIGHT = 56;
-const MAX_ATTACH_BYTES = 1.4 * 1024 * 1024;
+/**
+ * The chat-media bucket's own ceiling.
+ *
+ * Was 1.4 MB, which existed only because the bytes travelled as a base64
+ * data: URI inside the JSON request body. Attachments now go to storage, so
+ * the limit is the bucket's.
+ */
+const MAX_ATTACH_BYTES = 25 * 1024 * 1024;
 
 /** Soft brand tint — a low-alpha wash of a brand hue for chips, bubbles & tracks. */
 function tint(hex: string, alpha: number): string {
@@ -37,6 +44,37 @@ function tint(hex: string, alpha: number): string {
 }
 
 const dayKey = (iso: string) => new Date(iso).toISOString().slice(0, 10);
+
+/**
+ * The high-water mark for an incremental poll: the newest change held.
+ *
+ * `updated_at`, not `created_at` — an old message edited a moment ago is the
+ * real cursor, and a created_at cursor would stop delivering edits, reactions
+ * and deletes forever. Undefined when any row lacks it (an older server),
+ * which asks for the full thread and keeps working.
+ */
+function cursorOf(held?: ClientMessage[]): string | undefined {
+  if (!held?.length) return undefined;
+  let max: string | undefined;
+  for (const m of held) {
+    if (!m.updated_at) return undefined;
+    if (!max || m.updated_at > max) max = m.updated_at;
+  }
+  return max;
+}
+
+/**
+ * Apply a delta to the messages held: replace by id, add what is new.
+ *
+ * Order is left to the caller — this screen sorts newest-first for an inverted
+ * list, so sorting here would fight it.
+ */
+function mergeMessages(held: ClientMessage[], delta: ClientMessage[]): ClientMessage[] {
+  if (!delta.length) return held;
+  const byId = new Map(held.map((m) => [m.id, m]));
+  for (const m of delta) byId.set(m.id, m);
+  return [...byId.values()];
+}
 
 function formatDayLabel(iso: string): string {
   const d = new Date(iso);
@@ -50,24 +88,39 @@ function formatDayLabel(iso: string): string {
   return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-async function uriToDataUrl(uri: string, mime: string): Promise<{ url: string; size: number }> {
-  const res = await fetch(uri);
-  const blob = await res.blob();
+/**
+ * Upload one attachment to storage and return its key.
+ *
+ * Replaces reading the file into a base64 data: URI and posting it in the
+ * message body. That inlined copy was stored on the message row and then
+ * re-sent to every reader on every poll - a single photo turned the thread
+ * into roughly a megabyte of repeat traffic, which on a client's phone is
+ * their own data allowance.
+ *
+ * A blob PUT is used rather than FileSystem.uploadAsync: it is what the file
+ * and verification uploads already do here, and only *multipart* is broken on
+ * this Expo version (see uploadAvatar).
+ */
+async function uploadChatMedia(
+  uri: string,
+  mime: string,
+  name: string,
+): Promise<{ storageKey: string; size: number }> {
+  const blob = await (await fetch(uri)).blob();
   if (blob.size > MAX_ATTACH_BYTES) {
-    throw new Error('Attachment must be under ~1.4 MB. Try a smaller image or file.');
+    throw new Error('Attachment must be under 25 MB. Try a smaller file.');
   }
-  const reader = new FileReader();
-  const url = await new Promise<string>((resolve, reject) => {
-    reader.onerror = () => reject(new Error('Could not read file'));
-    reader.onload = () => resolve(String(reader.result));
-    reader.readAsDataURL(blob);
+  const ticket = await clientsApi.chatMediaTicket(name);
+  const put = await fetch(ticket.uploadUrl, {
+    method: 'PUT',
+    // Storage keeps whatever type it is told, and serves it back on download -
+    // without this an image arrives as a generic blob and the phone offers to
+    // save it instead of showing it inline.
+    headers: { 'Content-Type': mime || 'application/octet-stream' },
+    body: blob,
   });
-  // Ensure MIME prefix matches (some RN blobs omit type).
-  const fixed =
-    url.startsWith('data:') && !url.startsWith(`data:${mime}`)
-      ? `data:${mime};base64,${url.split(',')[1] ?? ''}`
-      : url;
-  return { url: fixed.startsWith('data:') ? fixed : `data:${mime};base64,${url}`, size: blob.size };
+  if (!put.ok) throw new Error(`Upload failed (${put.status})`);
+  return { storageKey: ticket.storageKey, size: blob.size };
 }
 
 export default function Chat() {
@@ -80,9 +133,24 @@ export default function Chat() {
   const [attachBusy, setAttachBusy] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
+  /**
+   * My thread, polled incrementally.
+   *
+   * It re-downloaded all 80 messages every 5 seconds to find out nothing had
+   * changed. On a client's phone that is their own data allowance, so the poll
+   * now sends the newest `updated_at` held and gets back only what changed.
+   */
   const msgsQ = useQuery({
     queryKey: ['me', 'messages'],
-    queryFn: () => clientsApi.myMessages(80),
+    queryFn: async () => {
+      const held = qc.getQueryData<ClientMessage[]>(['me', 'messages']);
+      const since = cursorOf(held);
+      const delta = await clientsApi.myMessages(80, since);
+      // Without a cursor the response IS the thread; with one it is a patch,
+      // and treating a patch as the whole thread would blank the chat on the
+      // first quiet poll.
+      return since ? mergeMessages(held ?? [], delta) : delta;
+    },
     refetchInterval: 5000,
     retry: 1,
   });
@@ -118,10 +186,10 @@ export default function Chat() {
   const sendAttachment = async (uri: string, mime: string, name: string) => {
     setAttachBusy(true);
     try {
-      const { url, size } = await uriToDataUrl(uri, mime);
+      const { storageKey, size } = await uploadChatMedia(uri, mime, name);
       await sendMut.mutateAsync({
         content: text.trim() || undefined,
-        attachment: { url, type: mime, name, size },
+        attachment: { storageKey, type: mime, name, size },
       });
       setText('');
     } catch (e) {

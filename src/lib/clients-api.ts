@@ -52,6 +52,13 @@ export interface ClientMessage {
   content: string;
   is_read: boolean;
   created_at: string;
+  /**
+   * Last change of any kind — an edit, reaction or delete, not just the send.
+   * The cursor an incremental poll advances on; absent on an older server,
+   * which falls back to a full fetch.
+   */
+  updated_at?: string;
+  /** A signed storage URL, or a legacy inlined data: URI on old messages. */
   attachment_url?: string | null;
   attachment_type?: string | null;
   attachment_name?: string | null;
@@ -355,7 +362,9 @@ export const clientsApi = {
   myProfile: () => api.get<ClientProfile>('/api/v1/me/profile'),
   myMeals: (days = 7) => api.get<ClientMealLog[]>(`/api/v1/me/meals${qs({ days })}`),
   myHabits: (days = 14) => api.get<HabitDay[]>(`/api/v1/me/habits${qs({ days })}`),
-  myMessages: (limit = 50) => api.get<ClientMessage[]>(`/api/v1/me/messages${qs({ limit })}`),
+  /** `since` (an ISO updated_at) returns only changed messages — an incremental poll. */
+  myMessages: (limit = 50, since?: string) =>
+    api.get<ClientMessage[]>(`/api/v1/me/messages${qs({ limit, since })}`),
   myProgram: () => api.get<ClientProgram | null>('/api/v1/me/program'),
   logHabit: (body: Partial<Omit<HabitDay, 'date'>> & { date?: string }) =>
     api.post<HabitDay>('/api/v1/me/habits', { body }),
@@ -396,9 +405,26 @@ export const clientsApi = {
   // Messaging with the nutritionist.
   sendMessage: (body: {
     content?: string;
-    attachment?: { url: string; type: string; name?: string; size?: number };
+    /**
+     * Send `storageKey` from chatMediaTicket. `url` is the old inlined base64
+     * data: URI - it rides in the JSON body, is stored on the message row and
+     * is then re-downloaded on every poll, so one photo made the whole thread
+     * expensive on mobile data.
+     */
+    attachment?: {
+      url?: string;
+      storageKey?: string;
+      type: string;
+      name?: string;
+      size?: number;
+    };
     replyTo?: string;
   }) => api.post<ClientMessage>('/api/v1/me/messages', { body }),
+
+  /** Signed upload URL for a chat photo or file the client is sending. */
+  chatMediaTicket: (file_name: string) =>
+    api.post<{ uploadUrl: string; storageKey: string; token: string }>(
+      '/api/v1/me/messages/media-ticket', { body: { file_name } }),
   markMyMessagesRead: () => api.post<{ marked: number }>('/api/v1/me/messages/read'),
 
   myNutritionist: () =>
