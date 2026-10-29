@@ -4129,7 +4129,15 @@ export class ClientsService {
           AND COALESCE(metadata->>'status', '') <> 'scheduled'
           AND COALESCE(metadata->>'hidden_admin', '') <> 'true'
           -- Incremental poll: only what changed since the caller's cursor.
-          AND ($3::timestamptz IS NULL OR updated_at > $3::timestamptz)
+          --
+          -- Truncated to milliseconds on BOTH sides. Postgres stores
+          -- microseconds but a JavaScript Date cannot hold them, so the
+          -- cursor the client echoes back is the row's own timestamp with the
+          -- sub-millisecond digits dropped - and a plain greater-than then
+          -- finds that same row newer than its own cursor on every single
+          -- poll, which re-sends the latest message forever.
+          AND ($3::timestamptz IS NULL
+               OR date_trunc('milliseconds', updated_at) > $3::timestamptz)
         ORDER BY created_at ASC
         LIMIT $2`,
       clientId,

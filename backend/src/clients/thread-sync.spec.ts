@@ -61,6 +61,67 @@ describe('the cursor', () => {
   });
 });
 
+/**
+ * The precision trap, found by measuring against the live API.
+ *
+ * Postgres stores timestamps to microseconds; a JavaScript Date holds only
+ * milliseconds. So the cursor a client echoes back is the row's own
+ * updated_at with the sub-millisecond digits lost, and a bare `updated_at >
+ * cursor` reports that row as newer than itself - forever. The symptom was an
+ * "idle" poll returning 1 message instead of 0, every 4 seconds.
+ *
+ * The fix truncates both sides to milliseconds, which is the precision the
+ * client can actually represent.
+ */
+describe('cursor precision', () => {
+  const toMs = (iso: string) => new Date(iso).toISOString();          // what JS can carry
+  const truncd = (iso: string) => iso.replace(/(\.\d{3})\d+/, '$1');  // date_trunc('milliseconds')
+
+  it('a JavaScript round-trip drops microseconds', () => {
+    expect(toMs('2026-09-25T07:15:37.002318Z')).toBe('2026-09-25T07:15:37.002Z');
+  });
+
+  /** Compare as instants, the way Postgres does — not as strings. */
+  const after = (a: string, b: string) => new Date(a).getTime() > new Date(b).getTime();
+
+  /**
+   * Microseconds as Postgres actually compares them. `Date` cannot hold them,
+   * so the sub-millisecond part is carried separately here.
+   */
+  const afterMicros = (storedIso: string, micros: number, cursorIso: string) => {
+    const base = new Date(storedIso).getTime();
+    const cur = new Date(cursorIso).getTime();
+    return base > cur || (base === cur && micros > 0);
+  };
+
+  it('plain greater-than would re-send the newest message on every poll', () => {
+    // The stored value is ...002318; the cursor that comes back is ...002.
+    // Postgres sees 318 microseconds of difference and calls the row newer
+    // than its own cursor, every 4 seconds, forever.
+    const stored = '2026-09-25T07:15:37.002Z';
+    expect(afterMicros(stored, 318, toMs('2026-09-25T07:15:37.002318Z'))).toBe(true);
+  });
+
+  it('truncating both sides makes an idle poll return nothing', () => {
+    const stored = '2026-09-25T07:15:37.002318Z';
+    expect(after(truncd(stored), toMs(stored))).toBe(false);
+  });
+
+  it('still delivers a genuinely newer message', () => {
+    const cursor = toMs('2026-09-25T07:15:37.002318Z');
+    expect(after(truncd('2026-09-25T07:15:37.004000Z'), cursor)).toBe(true);
+  });
+
+  it('delays, never drops, a change inside the same millisecond', () => {
+    // Two edits 300 microseconds apart collapse to one millisecond, so the
+    // later is not in THIS poll. It arrives on the next one, because any
+    // further change moves updated_at forward again - a 4-second delay in the
+    // worst case, not a lost message.
+    const cursor = truncd('2026-09-25T07:15:37.002318Z');
+    expect(after(truncd('2026-09-25T07:15:37.002600Z'), cursor)).toBe(false);
+  });
+});
+
 describe('what comes back', () => {
   const all = [
     msg('1', '2026-10-28T10:00:00Z'),
