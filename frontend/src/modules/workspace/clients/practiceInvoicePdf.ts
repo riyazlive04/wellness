@@ -202,6 +202,22 @@ export async function generatePracticeInvoicePdf(
   y += 4;
   totalRow('Total', rupees(invoice.total_paise), true);
 
+  // ── Part-payments ──────────────────────────────────────────────────
+  // A client who has paid a deposit must see it on the document, or the
+  // invoice reads as though nothing has been handed over and the practice
+  // looks like it is not keeping track. Only when part-paid: a fully paid
+  // invoice says so in the stamp below, and an untouched one has nothing to
+  // report.
+  const paid = invoice.paid_paise ?? 0;
+  const balance = invoice.balance_paise ?? Math.max(0, invoice.total_paise - paid);
+  if (paid > 0 && balance > 0) {
+    totalRow('Received', `- ${rupees(paid)}`);
+    doc.setDrawColor(220);
+    doc.line(360, y - 8, right, y - 8);
+    y += 4;
+    totalRow('Balance due', rupees(balance), true);
+  }
+
   // ── Paid stamp ─────────────────────────────────────────────────────
   if (invoice.status === 'paid') {
     y += 6;

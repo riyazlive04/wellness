@@ -703,6 +703,10 @@ export interface PracticeInvoice {
   notes: string | null;
   /** Printed at the foot of the invoice; copied from the practice default. */
   terms: string | null;
+  /** Received so far, summed from the payment ledger. */
+  paid_paise: number;
+  /** Still owed: total - paid, never negative. */
+  balance_paise: number;
   issued_at: string | null;
   due_at: string | null;
   paid_at: string | null;
@@ -711,6 +715,55 @@ export interface PracticeInvoice {
   client_name: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** One payment the practice received against an invoice. */
+export interface InvoicePayment {
+  id: string;
+  invoice_id: string;
+  amount_paise: number;
+  /** upi / cash / bank / card / cheque / other */
+  method: string | null;
+  /** Their own reference: a UPI ref, a cheque number. */
+  reference: string | null;
+  note: string | null;
+  received_at: string;
+  /** Set when this payment settles one instalment of a schedule. */
+  instalment_id: string | null;
+  created_at: string;
+  recorded_by_name: string | null;
+}
+
+export interface AddPaymentInput {
+  amount_paise: number;
+  method?: string;
+  reference?: string;
+  note?: string;
+  received_at?: string;
+  instalment_id?: string;
+}
+
+/** One part of an EMI schedule. */
+export interface InvoiceInstalment {
+  id: string;
+  invoice_id: string;
+  /** 1-based: instalment 2 of 3. */
+  seq: number;
+  amount_paise: number;
+  due_at: string;
+  /** What was first agreed, once the date has been extended. */
+  original_due_at: string | null;
+  extended_count: number;
+  note: string | null;
+  paid_paise: number;
+  balance_paise: number;
+  overdue: boolean;
+}
+
+export interface SchedulePartInput {
+  amount_paise: number;
+  due_at: string;
+  note?: string;
 }
 
 export interface SaveInvoiceInput {
@@ -1058,6 +1111,28 @@ export const clientsApi = {
     api.post<PracticeInvoice>(`/api/v1/workspaces/me/invoices/${id}/unpaid`, { body: {} }),
   voidInvoice: (id: string) =>
     api.post<PracticeInvoice>(`/api/v1/workspaces/me/invoices/${id}/void`, { body: {} }),
+
+  // ── Part-payments and instalments ────────────────────────────────
+  listInvoicePayments: (id: string) =>
+    api.get<InvoicePayment[]>(`/api/v1/workspaces/me/invoices/${id}/payments`),
+  /** Record money received. Returns the payment and the invoice it may have settled. */
+  addInvoicePayment: (id: string, body: AddPaymentInput) =>
+    api.post<{ payment: InvoicePayment; invoice: PracticeInvoice }>(
+      `/api/v1/workspaces/me/invoices/${id}/payments`, { body }),
+  deleteInvoicePayment: (id: string, paymentId: string) =>
+    api.post<PracticeInvoice>(
+      `/api/v1/workspaces/me/invoices/${id}/payments/${paymentId}/delete`, { body: {} }),
+
+  listInvoiceInstalments: (id: string) =>
+    api.get<InvoiceInstalment[]>(`/api/v1/workspaces/me/invoices/${id}/instalments`),
+  /** The parts must add up to the invoice total; send [] to clear the schedule. */
+  setInvoiceSchedule: (id: string, parts: SchedulePartInput[]) =>
+    api.post<InvoiceInstalment[]>(
+      `/api/v1/workspaces/me/invoices/${id}/instalments`, { body: { parts } }),
+  extendInvoiceInstalment: (id: string, instalmentId: string, due_at: string, note?: string) =>
+    api.patch<InvoiceInstalment[]>(
+      `/api/v1/workspaces/me/invoices/${id}/instalments/${instalmentId}`,
+      { body: { due_at, note } }),
 
   // ── Document PIN (practice side) ─────────────────────────────────
   /** PIN state for a client. Never returns the PIN itself. */

@@ -32,13 +32,25 @@ export class PracticeInvoicesService {
     subtotal_paise, tax_percent::float AS tax_percent, tax_paise, total_paise,
     notes, terms, issued_at, due_at, paid_at, paid_method, paid_note, created_at, updated_at`;
 
+  /**
+   * How much has actually been received, as a subquery rather than a stored
+   * column: a running total kept on the invoice is a running total that drifts
+   * from the ledger, and the ledger is the record. Correlates on the alias `i`,
+   * so every SELECT using this must alias practice_invoices as `i`.
+   */
+  private readonly PAID_PAISE = `
+    (SELECT COALESCE(sum(p.amount_paise), 0)::int
+       FROM public.practice_invoice_payments p
+      WHERE p.invoice_id = i.id) AS paid_paise`;
+
   /** Rows for the practice's own list, newest first. */
   async list(workspaceId: string, clientId?: string): Promise<InvoiceRow[]> {
     const rows = await this.prisma.$queryRawUnsafe<RawRow[]>(
       `SELECT ${this.COLS},
               (SELECT name  FROM public.clients c WHERE c.id = i.client_id) AS client_name,
               (SELECT email FROM public.clients c WHERE c.id = i.client_id) AS client_email,
-              (SELECT phone FROM public.clients c WHERE c.id = i.client_id) AS client_phone
+              (SELECT phone FROM public.clients c WHERE c.id = i.client_id) AS client_phone,
+              ${this.PAID_PAISE}
          FROM public.practice_invoices i
         WHERE i.workspace_id = $1::uuid
           AND ($2::uuid IS NULL OR i.client_id = $2::uuid)
@@ -56,7 +68,8 @@ export class PracticeInvoicesService {
       `SELECT ${this.COLS},
               (SELECT name  FROM public.clients c WHERE c.id = i.client_id) AS client_name,
               (SELECT email FROM public.clients c WHERE c.id = i.client_id) AS client_email,
-              (SELECT phone FROM public.clients c WHERE c.id = i.client_id) AS client_phone
+              (SELECT phone FROM public.clients c WHERE c.id = i.client_id) AS client_phone,
+              ${this.PAID_PAISE}
          FROM public.practice_invoices i
         WHERE i.id = $1::uuid AND i.workspace_id = $2::uuid LIMIT 1`,
       id,
@@ -211,6 +224,24 @@ export class PracticeInvoicesService {
       throw new BadRequestException('A payment date cannot be in the future.');
     }
 
+    // Settling in full means recording the money, not just the status: the
+    // payment ledger is what "received this month" is counted from, and an
+    // invoice marked paid without one would be missing from it.
+    const outstanding = current.total_paise - current.paid_paise;
+    if (outstanding > 0) {
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO public.practice_invoice_payments
+           (invoice_id, workspace_id, amount_paise, method, note, received_at)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::timestamptz)`,
+        id,
+        workspaceId,
+        outstanding,
+        input.method?.trim() || null,
+        input.note?.trim() || null,
+        paidAt.toISOString(),
+      );
+    }
+
     const [row] = await this.prisma.$queryRawUnsafe<RawRow[]>(
       `UPDATE public.practice_invoices
           SET status = 'paid', paid_at = $3::timestamptz,
@@ -248,6 +279,17 @@ export class PracticeInvoicesService {
     }
     if (current.status !== 'paid') return current;   // nothing to undo
 
+    // The ledger has to go with it. Leaving the payments behind would leave
+    // the invoice reading 'sent' while its own payments say it is covered -
+    // and the trigger would put it straight back to 'paid' on the next write.
+    // Undoing the payment is what "not paid" means; the status is downstream.
+    await this.prisma.$executeRawUnsafe(
+      `DELETE FROM public.practice_invoice_payments
+        WHERE invoice_id = $1::uuid AND workspace_id = $2::uuid`,
+      id,
+      workspaceId,
+    );
+
     const [row] = await this.prisma.$queryRawUnsafe<RawRow[]>(
       `UPDATE public.practice_invoices
           SET status = 'sent',
@@ -275,7 +317,7 @@ export class PracticeInvoicesService {
   /** What the CLIENT sees: their own issued invoices, never a draft. */
   async listForClient(clientId: string): Promise<InvoiceRow[]> {
     const rows = await this.prisma.$queryRawUnsafe<RawRow[]>(
-      `SELECT ${this.COLS}, NULL::text AS client_name
+      `SELECT ${this.COLS}, NULL::text AS client_name, ${this.PAID_PAISE}
          FROM public.practice_invoices i
         WHERE i.client_id = $1::uuid AND i.status <> 'draft'
         ORDER BY i.created_at DESC
@@ -288,7 +330,7 @@ export class PracticeInvoicesService {
   /** One of the client's own invoices, drafts excluded. */
   async getForClient(clientId: string, id: string): Promise<InvoiceRow> {
     const [row] = await this.prisma.$queryRawUnsafe<RawRow[]>(
-      `SELECT ${this.COLS}, NULL::text AS client_name
+      `SELECT ${this.COLS}, NULL::text AS client_name, ${this.PAID_PAISE}
          FROM public.practice_invoices i
         WHERE i.id = $1::uuid AND i.client_id = $2::uuid AND i.status <> 'draft'
         LIMIT 1`,
@@ -346,11 +388,17 @@ interface RawRow {
   client_name: string | null;
   client_email: string | null;
   client_phone: string | null;
+  /** Sum of the payment ledger. Absent on write paths - see toRow. */
+  paid_paise?: number | null;
 }
 
-export interface InvoiceRow extends Omit<RawRow, 'items' | 'issued_at' | 'due_at' | 'paid_at' | 'created_at' | 'updated_at'> {
+export interface InvoiceRow extends Omit<RawRow, 'items' | 'issued_at' | 'due_at' | 'paid_at' | 'created_at' | 'updated_at' | 'paid_paise'> {
   /** Display form, e.g. "INV-0007". */
   display_number: string;
+  /** Received so far, from the ledger. */
+  paid_paise: number;
+  /** Still owed: total - paid, floored at zero. */
+  balance_paise: number;
   items: InvoiceLine[];
   issued_at: string | null;
   due_at: string | null;
@@ -360,9 +408,20 @@ export interface InvoiceRow extends Omit<RawRow, 'items' | 'issued_at' | 'due_at
 }
 
 function toRow(r: RawRow): InvoiceRow {
+  // A write path's RETURNING cannot carry the payments subquery (it has no
+  // table alias to correlate on), so fall back to the status: a paid invoice
+  // with no ledger row reads as fully paid, which is what it was before
+  // part-payments existed.
+  const paid = r.paid_paise == null
+    ? (r.status === 'paid' ? r.total_paise : 0)
+    : Number(r.paid_paise);
+
   return {
     ...r,
     display_number: invoiceNumber(r.number),
+    paid_paise: paid,
+    /** Never negative: an overpayment is a credit to settle off-system. */
+    balance_paise: Math.max(0, r.total_paise - paid),
     // Postgres hands jsonb back parsed; be defensive about a hand-edited row.
     items: Array.isArray(r.items) ? (r.items as InvoiceLine[]) : [],
     issued_at: r.issued_at ? r.issued_at.toISOString() : null,

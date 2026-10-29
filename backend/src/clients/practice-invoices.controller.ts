@@ -12,7 +12,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsArray, IsIn, IsISO8601, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsArray, IsIn, IsInt, IsISO8601, IsNumber, IsOptional, IsString, IsUUID,
+  Max, MaxLength, Min, ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -22,6 +26,7 @@ import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { ClientsService } from './clients.service';
 import { PracticeInvoicesService } from './practice-invoices.service';
+import { InvoicePaymentsService } from './invoice-payments.service';
 
 class SaveInvoiceDto {
   /** [{ description, quantity, unit_paise }] - validated properly in the service. */
@@ -43,6 +48,41 @@ class MarkPaidDto {
   @IsOptional() @IsISO8601() paid_at?: string;
 }
 
+/** One payment that reached the practice. */
+class AddPaymentDto {
+  /**
+   * Paise. Capped at 10 crore so a stray decimal cannot write a number the
+   * int column will not hold; the service checks it against what is owed.
+   */
+  @IsInt() @Min(1) @Max(1_000_000_000) amount_paise!: number;
+
+  @IsOptional() @IsIn(['upi', 'cash', 'bank', 'card', 'cheque', 'other']) method?: string;
+  /** Their own reference: a UPI ref, a cheque number. */
+  @IsOptional() @IsString() @MaxLength(200) reference?: string;
+  @IsOptional() @IsString() @MaxLength(500) note?: string;
+  /** When the money arrived, if not now. */
+  @IsOptional() @IsISO8601() received_at?: string;
+  /** Which instalment this settles, when there is a schedule. */
+  @IsOptional() @IsUUID() instalment_id?: string;
+}
+
+class SchedulePartDto {
+  @IsInt() @Min(1) @Max(1_000_000_000) amount_paise!: number;
+  @IsISO8601() due_at!: string;
+  @IsOptional() @IsString() @MaxLength(200) note?: string;
+}
+
+class SetScheduleDto {
+  /** Empty or omitted clears the schedule back to a single payment. */
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => SchedulePartDto)
+  parts?: SchedulePartDto[];
+}
+
+class ExtendInstalmentDto {
+  @IsISO8601() due_at!: string;
+  @IsOptional() @IsString() @MaxLength(200) note?: string;
+}
+
 /**
  * A practice invoicing its own clients.
  *
@@ -58,6 +98,8 @@ export class PracticeInvoicesController {
   constructor(
     private readonly invoices: PracticeInvoicesService,
     private readonly clients: ClientsService,
+    // `payments_` because `payments` is a route handler on this class.
+    private readonly payments_: InvoicePaymentsService,
   ) {}
 
   private ws(user: AuthUser): string {
@@ -153,5 +195,85 @@ export class PracticeInvoicesController {
   @ApiOperation({ summary: 'Cancel an invoice. Kept, never deleted.' })
   async voidInvoice(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return { data: await this.invoices.void(this.ws(user), id) };
+  }
+
+  // ── Part-payments ──────────────────────────────────────────────────
+
+  @Get(':id/payments')
+  @WorkspaceRole('owner', 'manager', 'nutritionist')
+  @ApiOperation({ summary: 'Every payment recorded against this invoice.' })
+  async payments(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return { data: await this.payments_.listPayments(this.ws(user), id) };
+  }
+
+  @Post(':id/payments')
+  @WorkspaceRole('owner', 'manager', 'nutritionist')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: 'Record money received. Settles the invoice once it covers the total.' })
+  async addPayment(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AddPaymentDto,
+  ) {
+    const payment = await this.payments_.addPayment(this.ws(user), id, user.id, dto);
+    // The invoice too: recording a payment can settle it, and the caller
+    // should not have to re-fetch to find out whether it did.
+    return {
+      data: { payment, invoice: await this.invoices.get(this.ws(user), id) },
+    };
+  }
+
+  @Post(':id/payments/:paymentId/delete')
+  @HttpCode(200)
+  @WorkspaceRole('owner', 'manager', 'nutritionist')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: 'Remove a payment entered by mistake; reopens the invoice if it no longer covers the total.' })
+  async removePayment(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('paymentId', ParseUUIDPipe) paymentId: string,
+  ) {
+    await this.payments_.deletePayment(this.ws(user), id, paymentId);
+    return { data: await this.invoices.get(this.ws(user), id) };
+  }
+
+  // ── Instalments (EMI) ──────────────────────────────────────────────
+
+  @Get(':id/instalments')
+  @WorkspaceRole('owner', 'manager', 'nutritionist')
+  @ApiOperation({ summary: 'The EMI schedule on this invoice, with what is paid against each part.' })
+  async instalments(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return { data: await this.payments_.listInstalments(this.ws(user), id) };
+  }
+
+  @Post(':id/instalments')
+  @WorkspaceRole('owner', 'manager', 'nutritionist')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: 'Set the EMI schedule. The parts must add up to the invoice total; send none to clear it.' })
+  async setSchedule(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetScheduleDto,
+  ) {
+    return {
+      data: await this.payments_.setSchedule(this.ws(user), id, dto.parts ?? []),
+    };
+  }
+
+  @Patch(':id/instalments/:instalmentId')
+  @WorkspaceRole('owner', 'manager', 'nutritionist')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: 'Give one instalment more time, keeping the originally agreed date on record.' })
+  async extendInstalment(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('instalmentId', ParseUUIDPipe) instalmentId: string,
+    @Body() dto: ExtendInstalmentDto,
+  ) {
+    return {
+      data: await this.payments_.extendInstalment(
+        this.ws(user), id, instalmentId, dto.due_at, dto.note,
+      ),
+    };
   }
 }

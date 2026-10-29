@@ -23,6 +23,10 @@ export const CLIENT_WHATSAPP_TYPES = new Set([
   'appointment:declined',
   'appointment:cancelled',
   'meal_plan:published',
+  // Money due. A payment reminder that lives only in the app is a payment
+  // reminder nobody sees, and WhatsApp is where a practice would otherwise
+  // have chased this by hand.
+  'invoice:reminder',
 ]);
 
 /** The WhatsApp text for a client notification, signed by the practice. */

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, FileText, Loader2, Pencil, Plus, Send, Trash2, Wallet, X, Undo2 } from 'lucide-react';
+import { Download, FileText, ListPlus, Loader2, Pencil, Plus, Send, Trash2, Wallet, X, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -39,6 +39,8 @@ export function InvoicesTab({ clientId, clientName }: { clientId: string; client
   const [building, setBuilding] = useState(false);
   /** The invoice open in the builder for correction, if any. */
   const [editing, setEditing] = useState<PracticeInvoice | null>(null);
+  /** The invoice whose payments/instalments panel is expanded. */
+  const [openLedger, setOpenLedger] = useState<string | null>(null);
 
   const q = useQuery({
     queryKey: ['client', clientId, 'invoices'],
@@ -52,11 +54,20 @@ export function InvoicesTab({ clientId, clientName }: { clientId: string; client
     onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not send it.'),
   });
 
-  const paid = useMutation({
-    mutationFn: ({ id, method }: { id: string; method: string }) =>
-      clientsApi.markInvoicePaid(id, { method }),
-    onSuccess: () => { invalidate(); toast.success('Marked as paid.'); },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not mark it paid.'),
+  /**
+   * "Mark paid" records a payment for whatever is still owed, rather than
+   * setting the status directly. The status then follows the ledger, so the
+   * two can never tell the practice different things - and a part-paid
+   * invoice settles for its balance, not its total.
+   */
+  const payFull = useMutation({
+    mutationFn: (inv: PracticeInvoice) =>
+      clientsApi.addInvoicePayment(inv.id, {
+        amount_paise: inv.balance_paise,
+        method: 'upi',
+      }),
+    onSuccess: () => { invalidate(); toast.success('Recorded. The invoice is settled.'); },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not record it.'),
   });
 
   const unpay = useMutation({
@@ -80,9 +91,11 @@ export function InvoicesTab({ clientId, clientName }: { clientId: string; client
   }
 
   const rows = q.data ?? [];
+  // The balance, not the billed total: a part-paid invoice counted in full
+  // overstates what the practice is actually chasing.
   const outstanding = rows
     .filter((i) => i.status === 'sent')
-    .reduce((sum, i) => sum + i.total_paise, 0);
+    .reduce((sum, i) => sum + (i.balance_paise ?? i.total_paise), 0);
 
   return (
     <div className="space-y-4">
@@ -122,7 +135,8 @@ export function InvoicesTab({ clientId, clientName }: { clientId: string; client
         ) : (
           <ul className="divide-y divide-foreground/[0.04]">
             {rows.map((inv) => (
-              <li key={inv.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
+              <li key={inv.id} className="px-5 py-3.5">
+                <div className="flex flex-wrap items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-semibold tabular-nums">{inv.display_number}</span>
@@ -140,9 +154,19 @@ export function InvoicesTab({ clientId, clientName }: { clientId: string; client
                   </div>
                 </div>
 
-                <span className="flex-shrink-0 text-sm font-semibold tabular-nums">
-                  {inr(inv.total_paise)}
-                </span>
+                <div className="flex-shrink-0 text-right">
+                  <div className="text-sm font-semibold tabular-nums">
+                    {inr(inv.total_paise)}
+                  </div>
+                  {/* Part-paid: the balance is the number the practice is
+                      actually chasing, so it belongs next to the total
+                      rather than two clicks away. */}
+                  {inv.paid_paise > 0 && inv.balance_paise > 0 && (
+                    <div className="text-[10px] tabular-nums text-amber-700 dark:text-amber-300">
+                      {inr(inv.balance_paise)} left
+                    </div>
+                  )}
+                </div>
 
                 <div className="flex flex-shrink-0 items-center gap-1.5">
                   <button
@@ -177,11 +201,31 @@ export function InvoicesTab({ clientId, clientName }: { clientId: string; client
                   {inv.status === 'sent' && (
                     <button
                       type="button"
-                      onClick={() => paid.mutate({ id: inv.id, method: 'upi' })}
-                      disabled={paid.isPending}
+                      title={inv.paid_paise > 0
+                        ? `Record the remaining ${inr(inv.balance_paise)}`
+                        : 'Record the full amount as received'}
+                      onClick={() => payFull.mutate(inv)}
+                      disabled={payFull.isPending}
                       className="inline-flex items-center gap-1 rounded-full bg-teal-700 px-2.5 py-1 text-[11px] font-semibold text-teal-50 hover:bg-teal-800 disabled:opacity-40"
                     >
-                      <Wallet className="h-3 w-3" /> Mark paid
+                      <Wallet className="h-3 w-3" />
+                      {inv.paid_paise > 0 ? 'Settle' : 'Mark paid'}
+                    </button>
+                  )}
+
+                  {/* Part-payments and the EMI schedule. Open on demand: most
+                      invoices are paid once and need none of it. */}
+                  {inv.status !== 'draft' && inv.status !== 'void' && (
+                    <button
+                      type="button"
+                      title="Payments and instalments"
+                      onClick={() => setOpenLedger((cur) => (cur === inv.id ? null : inv.id))}
+                      className={cn(
+                        'grid h-7 w-7 place-items-center rounded-lg hover:bg-foreground/[0.06]',
+                        openLedger === inv.id ? 'bg-foreground/[0.06] text-foreground' : 'text-foreground/50',
+                      )}
+                    >
+                      <ListPlus className="h-3.5 w-3.5" />
                     </button>
                   )}
 
@@ -218,6 +262,11 @@ export function InvoicesTab({ clientId, clientName }: { clientId: string; client
                     </button>
                   )}
                 </div>
+                </div>
+
+                {openLedger === inv.id && (
+                  <InvoiceLedger invoice={inv} onChanged={invalidate} />
+                )}
               </li>
             ))}
           </ul>
@@ -236,6 +285,273 @@ export function InvoicesTab({ clientId, clientName }: { clientId: string; client
           onSaved={() => { setBuilding(false); setEditing(null); invalidate(); }}
         />
       )}
+    </div>
+  );
+}
+
+// ── Payments and instalments ─────────────────────────────────────────
+
+/**
+ * The money actually received against one invoice, and its EMI schedule.
+ *
+ * Expanded under the invoice rather than shown in a dialog: the practice is
+ * usually reconciling against a bank app or a cash book, and comparing a list
+ * to a list beats opening one payment at a time.
+ */
+function InvoiceLedger({
+  invoice, onChanged,
+}: {
+  invoice: PracticeInvoice;
+  onChanged: () => void;
+}) {
+  const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState('upi');
+  const [reference, setReference] = useState('');
+  const [parts, setParts] = useState('');
+
+  const paymentsQ = useQuery({
+    queryKey: ['invoice', invoice.id, 'payments'],
+    queryFn: () => clientsApi.listInvoicePayments(invoice.id),
+  });
+  const instalmentsQ = useQuery({
+    queryKey: ['invoice', invoice.id, 'instalments'],
+    queryFn: () => clientsApi.listInvoiceInstalments(invoice.id),
+  });
+  const refresh = () => {
+    void paymentsQ.refetch();
+    void instalmentsQ.refetch();
+    onChanged();
+  };
+
+  const add = useMutation({
+    mutationFn: () =>
+      clientsApi.addInvoicePayment(invoice.id, {
+        amount_paise: Math.round(Number(amount) * 100),
+        method,
+        reference: reference.trim() || undefined,
+      }),
+    onSuccess: (r) => {
+      setAmount('');
+      setReference('');
+      refresh();
+      toast.success(
+        r.invoice.balance_paise === 0
+          ? 'Recorded. The invoice is settled.'
+          : `Recorded. ${inr(r.invoice.balance_paise)} still owed.`,
+      );
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not record it.'),
+  });
+
+  const remove = useMutation({
+    mutationFn: (paymentId: string) => clientsApi.deleteInvoicePayment(invoice.id, paymentId),
+    onSuccess: () => { refresh(); toast.success('Payment removed.'); },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not remove it.'),
+  });
+
+  /**
+   * Split the balance into N monthly parts.
+   *
+   * The remainder goes on the FIRST instalment, not the last: the schedule
+   * must sum to the invoice exactly, and a practice would rather collect the
+   * odd rupee up front than discover it at the end.
+   */
+  const schedule = useMutation({
+    mutationFn: () => {
+      const n = Math.max(0, Math.min(36, parseInt(parts || '0', 10)));
+      if (!n) return clientsApi.setInvoiceSchedule(invoice.id, []);
+      const each = Math.floor(invoice.total_paise / n);
+      const rest = invoice.total_paise - each * n;
+      const first = new Date();
+      return clientsApi.setInvoiceSchedule(
+        invoice.id,
+        Array.from({ length: n }, (_, k) => {
+          const due = new Date(first);
+          due.setMonth(due.getMonth() + k + 1);
+          return { amount_paise: each + (k === 0 ? rest : 0), due_at: due.toISOString() };
+        }),
+      );
+    },
+    onSuccess: () => { refresh(); toast.success('Schedule saved.'); },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not save the schedule.'),
+  });
+
+  const extend = useMutation({
+    mutationFn: ({ id, due }: { id: string; due: string }) =>
+      clientsApi.extendInvoiceInstalment(invoice.id, id, due),
+    onSuccess: () => { refresh(); toast.success('Due date moved. The client will be reminded again.'); },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not move it.'),
+  });
+
+  const payments = paymentsQ.data ?? [];
+  const instalments = instalmentsQ.data ?? [];
+  // Prefilled with what is owed: the common entry is "they paid the rest".
+  const owed = invoice.balance_paise;
+
+  return (
+    <div className="mt-3 space-y-3 rounded-xl border border-foreground/[0.07] bg-foreground/[0.02] p-3.5">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
+        <span className="text-foreground/55">
+          Received <span className="font-semibold tabular-nums text-foreground/80">{inr(invoice.paid_paise)}</span>
+        </span>
+        <span className="text-foreground/55">
+          of <span className="tabular-nums">{inr(invoice.total_paise)}</span>
+        </span>
+        {owed > 0 && (
+          <span className="font-semibold tabular-nums text-amber-700 dark:text-amber-300">
+            {inr(owed)} outstanding
+          </span>
+        )}
+      </div>
+
+      {/* ── What came in ── */}
+      {payments.length > 0 && (
+        <ul className="space-y-1">
+          {payments.map((p) => (
+            <li key={p.id} className="flex items-center gap-2 text-[11px]">
+              <span className="w-20 tabular-nums font-semibold">{inr(p.amount_paise)}</span>
+              <span className="text-foreground/55">
+                {new Date(p.received_at).toLocaleDateString('en-IN')}
+                {p.method ? ` · ${p.method}` : ''}
+                {p.reference ? ` · ${p.reference}` : ''}
+              </span>
+              <button
+                type="button"
+                title="Remove this payment"
+                disabled={remove.isPending}
+                onClick={() => {
+                  if (window.confirm(`Remove the ${inr(p.amount_paise)} payment? Use this only if it never arrived.`)) {
+                    remove.mutate(p.id);
+                  }
+                }}
+                className="ml-auto grid h-6 w-6 place-items-center rounded-lg text-foreground/35 hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-40"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* ── Record a payment ── */}
+      {owed > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <span className="pointer-events-none absolute left-2.5 top-1.5 text-xs text-foreground/45">₹</span>
+            <input
+              type="number" min={0} step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder={(owed / 100).toString()}
+              aria-label="Amount received"
+              className="w-28 rounded-lg border border-foreground/10 bg-canvas py-1.5 pl-6 pr-2 text-right text-xs tabular-nums focus:border-teal-400/60 focus:outline-none"
+            />
+          </div>
+          <select
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+            aria-label="How they paid"
+            className="rounded-lg border border-foreground/10 bg-canvas px-2 py-1.5 text-xs focus:border-teal-400/60 focus:outline-none"
+          >
+            {['upi', 'cash', 'bank', 'card', 'cheque', 'other'].map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+          <input
+            value={reference}
+            onChange={(e) => setReference(e.target.value)}
+            placeholder="Reference (optional)"
+            className="min-w-0 flex-1 rounded-lg border border-foreground/10 bg-canvas px-2 py-1.5 text-xs focus:border-teal-400/60 focus:outline-none"
+          />
+          <button
+            type="button"
+            disabled={add.isPending}
+            onClick={() => add.mutate()}
+            className="inline-flex items-center gap-1 rounded-full bg-teal-700 px-3 py-1.5 text-[11px] font-semibold text-teal-50 hover:bg-teal-800 disabled:opacity-40"
+          >
+            {add.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+            Record
+          </button>
+        </div>
+      )}
+
+      {/* ── EMI schedule ── */}
+      <div className="border-t border-foreground/[0.06] pt-3">
+        {instalments.length > 0 ? (
+          <ul className="space-y-1">
+            {instalments.map((s) => (
+              <li key={s.id} className="flex flex-wrap items-center gap-2 text-[11px]">
+                <span className="w-14 text-foreground/50">Part {s.seq}</span>
+                <span className="w-20 tabular-nums font-semibold">{inr(s.amount_paise)}</span>
+                <span className={cn(
+                  'tabular-nums',
+                  s.overdue ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-foreground/55',
+                )}>
+                  due {new Date(s.due_at).toLocaleDateString('en-IN')}
+                  {s.overdue ? ' · overdue' : ''}
+                </span>
+                {s.balance_paise === 0 ? (
+                  <span className="text-teal-700 dark:text-teal-300">paid</span>
+                ) : (
+                  <span className="text-foreground/45">{inr(s.balance_paise)} left</span>
+                )}
+                {/* Extending is the request practices actually get, so it is a
+                    button and not a trip through the schedule builder. */}
+                {s.balance_paise > 0 && (
+                  <button
+                    type="button"
+                    title="Give this instalment one more month"
+                    disabled={extend.isPending}
+                    onClick={() => {
+                      const due = new Date(s.due_at);
+                      due.setMonth(due.getMonth() + 1);
+                      extend.mutate({ id: s.id, due: due.toISOString() });
+                    }}
+                    className="ml-auto rounded-full border border-foreground/12 px-2 py-0.5 text-[10px] font-medium text-foreground/65 hover:bg-foreground/[0.05] disabled:opacity-40"
+                  >
+                    +1 month
+                  </button>
+                )}
+                {s.extended_count > 0 && (
+                  <span className="text-[10px] text-foreground/40">
+                    extended {s.extended_count}×
+                  </span>
+                )}
+              </li>
+            ))}
+            <li className="pt-1">
+              <button
+                type="button"
+                onClick={() => { setParts('0'); schedule.mutate(); }}
+                className="text-[10px] text-foreground/50 underline decoration-foreground/20 underline-offset-2 hover:text-foreground"
+              >
+                Clear the schedule
+              </button>
+            </li>
+          </ul>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            <span className="text-foreground/55">Split into</span>
+            <input
+              type="number" min={2} max={36}
+              value={parts}
+              onChange={(e) => setParts(e.target.value)}
+              placeholder="3"
+              aria-label="Number of instalments"
+              className="w-14 rounded-lg border border-foreground/10 bg-canvas px-2 py-1 text-center text-xs tabular-nums focus:border-teal-400/60 focus:outline-none"
+            />
+            <span className="text-foreground/55">monthly instalments</span>
+            <button
+              type="button"
+              disabled={schedule.isPending || !parts || Number(parts) < 2}
+              onClick={() => schedule.mutate()}
+              className="rounded-full border border-foreground/15 px-2.5 py-1 text-[10px] font-semibold text-foreground/80 hover:bg-foreground/[0.05] disabled:opacity-40"
+            >
+              Set up EMI
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

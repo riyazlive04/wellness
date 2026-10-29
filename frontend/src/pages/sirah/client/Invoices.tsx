@@ -46,7 +46,12 @@ export default function ClientInvoices() {
   });
 
   const rows = q.data ?? [];
-  const due = rows.filter((i) => i.status === 'sent').reduce((s, i) => s + i.total_paise, 0);
+  // What is still owed, not what was billed: an invoice part-paid with a
+  // deposit would otherwise be counted at its full value and tell the client
+  // they owe money they have already handed over.
+  const due = rows
+    .filter((i) => i.status === 'sent')
+    .reduce((s, i) => s + (i.balance_paise ?? i.total_paise), 0);
 
   async function download(inv: PracticeInvoice) {
     try {
@@ -125,9 +130,19 @@ export default function ClientInvoices() {
                         </div>
                       </div>
 
-                      <span className="flex-shrink-0 text-sm font-semibold tabular-nums">
-                        {inr(inv.total_paise)}
-                      </span>
+                      <div className="flex-shrink-0 text-right">
+                        <div className="text-sm font-semibold tabular-nums">
+                          {inr(inv.total_paise)}
+                        </div>
+                        {/* Part-paid: show the client what has landed and what
+                            is left, so the running balance in their portal
+                            matches the invoice PDF. */}
+                        {inv.paid_paise > 0 && inv.balance_paise > 0 && (
+                          <div className="text-[10px] tabular-nums text-amber-700 dark:text-amber-300">
+                            {inr(inv.paid_paise)} paid · {inr(inv.balance_paise)} left
+                          </div>
+                        )}
+                      </div>
 
                       <button
                         type="button"
