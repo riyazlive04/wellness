@@ -703,6 +703,12 @@ export class MeController {
     return { data: await this.clients.createFileUploadTicket(user.id, body.file_name) };
   }
 
+  @Post('messages/media-ticket')
+  @ApiOperation({ summary: 'Signed upload URL for a chat photo, voice note or file the client is sending.' })
+  async chatMediaTicket(@CurrentUser() user: AuthUser, @Body() body: FileUploadTicketDto) {
+    return { data: await this.clients.createMyChatMediaTicket(user.id, body.file_name) };
+  }
+
   @Post('files')
   @ApiOperation({ summary: 'Record a file the client just uploaded (visible to their nutritionist).' })
   async addFile(@CurrentUser() user: AuthUser, @Body() body: AddFileDto) {

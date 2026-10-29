@@ -30,6 +30,9 @@ import {
  * short enough that a phone left on a table re-locks by itself.
  */
 const DOCUMENT_PIN_UNLOCK_SECONDS = 15 * 60;
+
+/** Private bucket holding chat photos, voice notes and files. */
+const CHAT_MEDIA_BUCKET = 'chat-media';
 import { importPKCS8, SignJWT } from 'jose';
 import { PrismaService } from '../database/prisma.service';
 import { buildAssessmentContent, buildAssessmentReport, type AssessmentType, type TemplateQuestion } from './assessment-templates';
@@ -911,7 +914,8 @@ export class ClientsService {
     const lim = clamp(limit, 1, 200);
     const rows = await this.prisma.$queryRawUnsafe<ClientMessage[]>(
       `SELECT m.id, m.sender_type, m.message_type, m.content, m.is_read, m.created_at,
-              m.metadata, m.attachment_url, m.attachment_name, m.attachment_type, m.attachment_size
+              m.metadata, m.attachment_url, m.attachment_storage_key,
+              m.attachment_name, m.attachment_type, m.attachment_size
          FROM public.messages m
          JOIN public.clients c ON c.id = m.client_id
         WHERE c.user_id = $1::uuid
@@ -922,6 +926,7 @@ export class ClientsService {
       userId,
       lim,
     );
+    await this.signAttachments(rows);
     return rows;
   }
 
@@ -1343,13 +1348,18 @@ export class ClientsService {
     const [row] = await this.prisma.$queryRawUnsafe<ClientMessage[]>(
       `INSERT INTO public.messages
          (client_id, sender_id, sender_type, message_type, content, metadata,
-          attachment_url, attachment_name, attachment_type, attachment_size)
-       VALUES ($1::uuid, $2::uuid, 'client', $3, $4, $5::jsonb, $6, $7, $8, $9)
+          attachment_url, attachment_storage_key,
+          attachment_name, attachment_type, attachment_size)
+       VALUES ($1::uuid, $2::uuid, 'client', $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
        RETURNING id, sender_type, message_type, content, is_read, created_at, metadata,
-                 attachment_url, attachment_name, attachment_type, attachment_size`,
+                 attachment_url, attachment_storage_key,
+                 attachment_name, attachment_type, attachment_size`,
       me.id, userId, msgTypeFor(att), body, JSON.stringify(meta),
-      att?.url ?? null, att?.name ?? null, att?.type ?? null, att?.size ?? null,
+      att?.storageKey ? null : (att?.url ?? null),
+      att?.storageKey ?? null,
+      att?.name ?? null, att?.type ?? null, att?.size ?? null,
     );
+    await this.signAttachments([row]);
 
     // Notify the workspace's staff (nutritionist) on their own devices that a
     // client just messaged — so they see it even with the app closed.
@@ -1422,13 +1432,20 @@ export class ClientsService {
     const [row] = await this.prisma.$queryRawUnsafe<ClientMessage[]>(
       `INSERT INTO public.messages
          (client_id, sender_id, sender_type, message_type, content, metadata,
-          attachment_url, attachment_name, attachment_type, attachment_size)
-       VALUES ($1::uuid, $2::uuid, 'admin', $3, $4, $5::jsonb, $6, $7, $8, $9)
+          attachment_url, attachment_storage_key,
+          attachment_name, attachment_type, attachment_size)
+       VALUES ($1::uuid, $2::uuid, 'admin', $3, $4, $5::jsonb, $6, $7, $8, $9, $10)
        RETURNING id, sender_type, message_type, content, is_read, created_at, metadata,
-                 attachment_url, attachment_name, attachment_type, attachment_size`,
+                 attachment_url, attachment_storage_key,
+                 attachment_name, attachment_type, attachment_size`,
       clientId, senderUserId, msgTypeFor(att), body, JSON.stringify(meta),
-      att?.url ?? null, att?.name ?? null, att?.type ?? null, att?.size ?? null,
+      // Exactly one of the two: a storage-backed attachment stores the key and
+      // leaves the URL null, and the reader signs it on the way out.
+      att?.storageKey ? null : (att?.url ?? null),
+      att?.storageKey ?? null,
+      att?.name ?? null, att?.type ?? null, att?.size ?? null,
     );
+    await this.signAttachments([row]);
 
     // Don't notify for scheduled messages — that happens when the cron delivers them.
     if (!scheduled) {
@@ -3318,6 +3335,106 @@ export class ClientsService {
     return row;
   }
 
+  /**
+   * A signed upload URL for one chat attachment.
+   *
+   * Chat media goes to the bucket rather than into the message row. An
+   * inlined data: URI is re-downloaded on every 4-second poll, so a single
+   * photo turns a thread into a megabyte of repeat traffic - and it forced
+   * images down to 1280px and refused any other file over 1.4 MB just to fit
+   * the JSON body.
+   *
+   * Counts against the workspace's storage quota like any other upload.
+   */
+  async createChatMediaTicket(
+    workspaceId: string,
+    clientId: string,
+    fileName: string,
+  ): Promise<{ uploadUrl: string; storageKey: string; token: string }> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    await this.limits.assertStorageAvailable(workspaceId);
+    return this.createUploadTicket(CHAT_MEDIA_BUCKET, this.buildFileKey(clientId, fileName));
+  }
+
+  /** The same, for a client uploading from their own app. */
+  async createMyChatMediaTicket(
+    userId: string,
+    fileName: string,
+  ): Promise<{ uploadUrl: string; storageKey: string; token: string }> {
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string; workspace_id: string }>>(
+      `SELECT id, workspace_id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+      userId,
+    );
+    if (!me) throw new NotFoundException('No client profile linked to this user');
+    await this.limits.assertStorageAvailable(me.workspace_id);
+    return this.createUploadTicket(CHAT_MEDIA_BUCKET, this.buildFileKey(me.id, fileName));
+  }
+
+  /**
+   * Turn storage keys into signed URLs for a page of messages.
+   *
+   * One batched call for the whole thread rather than one per message, and
+   * mutates in place so every read path gets it by calling this once.
+   * `attachment_url` is left untouched where there is no key: the six legacy
+   * rows hold inlined data: URIs and must keep rendering.
+   */
+  private async signAttachments(rows: Array<{
+    attachment_storage_key?: string | null;
+    attachment_url?: string | null;
+  }>): Promise<void> {
+    const keys = [...new Set(
+      rows.map((r) => r.attachment_storage_key).filter((k): k is string => !!k),
+    )];
+    if (!keys.length) return;
+
+    const signed = await this.signStorageKeys(CHAT_MEDIA_BUCKET, keys);
+    for (const r of rows) {
+      const key = r.attachment_storage_key;
+      if (key && signed[key]) r.attachment_url = signed[key];
+    }
+  }
+
+  /**
+   * Sign many object keys in one request.
+   *
+   * An hour is long enough that an open thread never shows a broken image and
+   * short enough that a leaked URL stops working; the browser caches the
+   * bytes, so a re-sign does not re-download them.
+   */
+  private async signStorageKeys(
+    bucket: string,
+    keys: string[],
+  ): Promise<Record<string, string>> {
+    if (!keys.length) return {};
+    const supabaseUrl = this.config.getOrThrow<string>('SUPABASE_URL').trim();
+    const serviceKey = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY').trim();
+    try {
+      const resp = await fetch(`${supabaseUrl}/storage/v1/object/sign/${bucket}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expiresIn: 3600, paths: keys }),
+      });
+      if (!resp.ok) {
+        this.logger.warn(`Sign chat media failed: ${resp.status} ${await resp.text()}`);
+        return {};
+      }
+      const list = (await resp.json()) as Array<{ path?: string; signedURL?: string }>;
+      const out: Record<string, string> = {};
+      for (const item of list) {
+        if (!item.path || !item.signedURL) continue;
+        out[item.path] = item.signedURL.startsWith('http')
+          ? item.signedURL
+          : `${supabaseUrl}/storage/v1${item.signedURL.startsWith('/') ? '' : '/'}${item.signedURL}`;
+      }
+      return out;
+    } catch (err) {
+      // A signing outage must not blank the whole conversation - the text is
+      // the important part and still renders.
+      this.logger.warn(`Sign chat media threw: ${(err as Error).message}`);
+      return {};
+    }
+  }
+
   async createUploadTicket(
     bucket: string,
     key: string,
@@ -3990,9 +4107,10 @@ export class ClientsService {
     );
     if (!c) throw new NotFoundException('Client not in this workspace.');
 
-    return this.prisma.$queryRawUnsafe<ThreadMessage[]>(
+    const rows = await this.prisma.$queryRawUnsafe<ThreadMessage[]>(
       `SELECT id, sender_type, message_type, content, is_read, created_at,
-              metadata, attachment_url, attachment_name, attachment_type, attachment_size
+              metadata, attachment_url, attachment_storage_key,
+              attachment_name, attachment_type, attachment_size
          FROM public.messages
         WHERE client_id = $1::uuid
           AND COALESCE(metadata->>'status', '') <> 'scheduled'
@@ -4002,6 +4120,8 @@ export class ClientsService {
       clientId,
       clamp(limit, 1, 500),
     );
+    await this.signAttachments(rows);
+    return rows;
   }
 
   /** Mark all client→admin messages as read once the admin opens the thread. */
@@ -5878,7 +5998,10 @@ export interface ThreadMessage {
   is_read: boolean;
   created_at: string;
   metadata?: unknown;
+  /** A signed URL when storage-backed; a legacy inlined data: URI otherwise. */
   attachment_url?: string | null;
+  /** Set on storage-backed attachments. Internal - the client uses the URL. */
+  attachment_storage_key?: string | null;
   attachment_name?: string | null;
   attachment_type?: string | null;
   attachment_size?: number | null;
@@ -5887,7 +6010,18 @@ export interface ThreadMessage {
 /** Optional extras a send call can carry (attachment + reply-to + schedule). */
 export interface SendOpts {
   content?: string;
-  attachment?: { url: string; type: string; name?: string; size?: number };
+  /**
+   * `storageKey` is the path in chat-media, for anything uploaded through an
+   * upload ticket. `url` is only for the legacy inlined data: URI path, which
+   * new senders should not use - it is what made a thread a megabyte.
+   */
+  attachment?: {
+    url?: string;
+    storageKey?: string;
+    type: string;
+    name?: string;
+    size?: number;
+  };
   replyTo?: string;
   /** ISO timestamp — when set & in the future, the message is queued, not sent now. */
   scheduledFor?: string;

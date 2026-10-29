@@ -15,6 +15,7 @@ import { collaborationApi } from '@/modules/workspace/api/collaboration';
 import { useMicRecorder } from '@/modules/workspace/voice-ai/useMicRecorder';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { CHAT_MEDIA_MAX_BYTES, uploadChatMedia } from '@/modules/workspace/messaging/uploadChatMedia';
 import { withinMessageMutationWindow } from '@/lib/messages';
 import i18n from '@/i18n';
 
@@ -334,18 +335,35 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
     toast.success(t('toast.scheduled'));
   }
 
+  /**
+   * Attach a file by uploading it to storage, not by inlining it.
+   *
+   * The bytes used to travel as a base64 data: URI inside the message row,
+   * which meant the whole thread re-downloaded them on every 4-second poll -
+   * close to a megabyte every 4 seconds on one real thread. It also forced
+   * images down to 1280px and refused any other file over 1.4 MB purely to
+   * fit the JSON body.
+   *
+   * Now the browser PUTs to the bucket and only a ~60-byte key is sent, so
+   * images keep their resolution and the limit is the bucket's own 25 MB.
+   */
   async function onPickFile(file: File) {
     setAttaching(true);
     try {
-      if (file.type.startsWith('image/')) {
-        const url = await downscaleToDataUrl(file, 1280, 0.82);
-        sendMut.mutate({ attachment: { url, type: 'image/jpeg', name: file.name, size: url.length }, replyTo: replyTo?.id });
-      } else {
-        // Non-image files travel as data URLs through the 2 MB JSON body, so cap them.
-        if (file.size > 1.4 * 1024 * 1024) { toast.error(t('toast.fileTooLarge')); return; }
-        const url = await blobToDataUrl(file);
-        sendMut.mutate({ attachment: { url, type: file.type || 'application/octet-stream', name: file.name, size: file.size }, replyTo: replyTo?.id });
+      if (file.size > CHAT_MEDIA_MAX_BYTES) {
+        toast.error(t('toast.fileTooLarge'));
+        return;
       }
+      const storageKey = await uploadChatMedia(cid, file);
+      sendMut.mutate({
+        attachment: {
+          storageKey,
+          type: file.type || 'application/octet-stream',
+          name: file.name,
+          size: file.size,
+        },
+        replyTo: replyTo?.id,
+      });
     } catch { toast.error(t('toast.attachFailed')); }
     finally { setAttaching(false); if (fileRef.current) fileRef.current.value = ''; }
   }
@@ -359,8 +377,19 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
   async function sendVoice(blob: Blob | null) {
     if (!blob || blob.size === 0) return;
     try {
-      const url = await blobToDataUrl(blob);
-      sendMut.mutate({ attachment: { url, type: blob.type || 'audio/webm', name: 'voice-note', size: blob.size }, replyTo: replyTo?.id });
+      // Voice notes go to storage like any other attachment: a minute of audio
+      // inlined as base64 is the same repeat-download problem as a photo.
+      const ext = (blob.type.split('/')[1] || 'webm').split(';')[0];
+      const storageKey = await uploadChatMedia(cid, blob, `voice-note.${ext}`);
+      sendMut.mutate({
+        attachment: {
+          storageKey,
+          type: blob.type || 'audio/webm',
+          name: 'voice-note',
+          size: blob.size,
+        },
+        replyTo: replyTo?.id,
+      });
     } catch { toast.error(t('toast.voiceFailed')); }
   }
   async function toggleMic() {
@@ -923,35 +952,6 @@ function relativeTime(iso: string): string {
   if (sec < 86_400) return `${Math.round(sec / 3600)}h ago`;
   if (sec < 604_800) return `${Math.round(sec / 86_400)}d ago`;
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-}
-
-async function downscaleToDataUrl(file: File, max = 1280, quality = 0.82): Promise<string> {
-  const raw = await new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(new Error('read failed'));
-    r.readAsDataURL(file);
-  });
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const i = new window.Image();
-    i.onload = () => resolve(i); i.onerror = () => reject(new Error('decode failed')); i.src = raw;
-  });
-  const scale = Math.min(1, max / Math.max(img.width, img.height));
-  const w = Math.max(1, Math.round(img.width * scale)), h = Math.max(1, Math.round(img.height * scale));
-  const canvas = document.createElement('canvas');
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return raw;
-  ctx.drawImage(img, 0, 0, w, h);
-  return canvas.toDataURL('image/jpeg', quality);
-}
-async function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(new Error('read failed'));
-    r.readAsDataURL(blob);
-  });
 }
 
 interface WorkspaceSummary { practiceName: string; ownerName: string; initials: string }

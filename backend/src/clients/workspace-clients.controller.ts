@@ -28,7 +28,18 @@ import { DeleteClientDto, RejectJoinRequestDto, RotateJoinLinkDto } from './dto/
 import { ListClientsQuery } from './dto/list-clients.query';
 import { JoinRequestStatus } from './clients.types';
 
-interface Attachment { url: string; type: string; name?: string; size?: number }
+/**
+ * `storageKey` is the path returned by a chat-media upload ticket, and is how
+ * attachments should travel. `url` is the legacy inlined data: URI, kept only
+ * so older app builds keep working - it is what made a thread a megabyte.
+ */
+interface Attachment {
+  url?: string;
+  storageKey?: string;
+  type: string;
+  name?: string;
+  size?: number;
+}
 
 class SendAdminMessageDto {
   @IsOptional() @IsString() @MaxLength(4000) content?: string;
@@ -319,6 +330,20 @@ export class WorkspaceClientsController {
     return { data: await this.clients.sendAdminMessage(user.workspaceId, user.id, clientId, {
       content: body.content, attachment: body.attachment, replyTo: body.replyTo, scheduledFor: body.scheduledFor,
     }) };
+  }
+
+  // Same guard as POST :clientId/messages exactly: a role that cannot send a
+  // message must not be able to put bytes in the bucket either.
+  @Post(':clientId/messages/media-ticket')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Signed upload URL for a chat photo, voice note or file.' })
+  async chatMediaTicket(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Body() dto: FileUploadTicketDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.createChatMediaTicket(user.workspaceId, clientId, dto.file_name) };
   }
 
   // ── Quick-reply templates (workspace-scoped) ──

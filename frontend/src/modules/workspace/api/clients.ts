@@ -892,7 +892,18 @@ export interface MessageMeta {
   status?: string;
   scheduled_for?: string;
 }
-export interface MsgAttachment { url: string; type: string; name?: string; size?: number }
+/**
+ * Send `storageKey` (from a media ticket) rather than `url`. `url` is the old
+ * inlined base64 data: URI path, kept only for older app builds - it is what
+ * made a thread re-download a megabyte on every poll.
+ */
+export interface MsgAttachment {
+  url?: string;
+  storageKey?: string;
+  type: string;
+  name?: string;
+  size?: number;
+}
 export interface QuickReply { id: string; label: string; body: string }
 
 export interface ThreadMessage {
@@ -1361,6 +1372,10 @@ export const clientsApi = {
     api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/workspaces/me/clients/${clientId}/files/${fileId}/download`),
   clientFileUploadTicket: (clientId: string, file_name: string) =>
     api.post<{ uploadUrl: string; storageKey: string; token: string }>(`/api/v1/workspaces/me/clients/${clientId}/files/upload-ticket`, { body: { file_name } }),
+  /** Signed upload URL for a chat photo, voice note or file (staff side). */
+  chatMediaTicket: (clientId: string, file_name: string) =>
+    api.post<{ uploadUrl: string; storageKey: string; token: string }>(
+      `/api/v1/workspaces/me/clients/${clientId}/messages/media-ticket`, { body: { file_name } }),
   shareClientFile: (clientId: string, body: { storage_key: string; file_name: string; file_type?: string; file_size?: number }) =>
     api.post<FileItem>(`/api/v1/workspaces/me/clients/${clientId}/files`, { body }),
   deleteClientFile: (clientId: string, fileId: string) =>
@@ -1542,6 +1557,10 @@ export const clientsApi = {
     api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/me/files/${id}/download`),
   fileUploadTicket: (file_name: string) =>
     api.post<{ uploadUrl: string; storageKey: string; token: string }>('/api/v1/me/files/upload-ticket', { body: { file_name } }),
+  /** Signed upload URL for a chat attachment the client is sending. */
+  myChatMediaTicket: (file_name: string) =>
+    api.post<{ uploadUrl: string; storageKey: string; token: string }>(
+      '/api/v1/me/messages/media-ticket', { body: { file_name } }),
   addMyFile: (body: { storage_key: string; file_name: string; file_type?: string; file_size?: number }) =>
     api.post<FileItem>('/api/v1/me/files', { body }),
   deleteMyFile: (id: string) =>

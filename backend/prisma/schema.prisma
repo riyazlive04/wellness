@@ -1369,7 +1369,10 @@ model messages {
   metadata        Json?       @default("{}")
   is_read         Boolean     @default(false)
   created_at      DateTime    @default(now()) @db.Timestamptz(6)
+  /// LEGACY: inlined base64 data: URI. New messages use attachment_storage_key.
   attachment_url  String?
+  /// Object key in the chat-media bucket; signed on read.
+  attachment_storage_key String?
   attachment_name String?
   attachment_type String?
   attachment_size Int?
