@@ -8,7 +8,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -51,11 +51,20 @@ const REACTIONS = ['👍', '❤️', '🎉', '💪', '🙏'];
 function cursorOf(held?: ThreadMessage[]): string | undefined {
   if (!held?.length) return undefined;
   let max: string | undefined;
+  let sawServerRow = false;
   for (const m of held) {
+    // An optimistic row has no server timestamp yet. Skip it rather than
+    // abandoning the cursor: it is replaced by the saved row on success, and
+    // treating it as "unknown" would drop the whole thread back to full
+    // fetches for as long as one send is in flight.
+    if (m.id.startsWith('tmp_')) continue;
+    // A real row with no updated_at means an older server: fall back to a
+    // full fetch, which is correct if wasteful.
     if (!m.updated_at) return undefined;
+    sawServerRow = true;
     if (!max || m.updated_at > max) max = m.updated_at;
   }
-  return max;
+  return sawServerRow ? max : undefined;
 }
 
 /**
@@ -67,6 +76,17 @@ function mergeThread(held: ThreadMessage[], delta: ThreadMessage[]): ThreadMessa
   if (!delta.length) return held;
   const byId = new Map(held.map((m) => [m.id, m]));
   for (const m of delta) byId.set(m.id, m);
+  // Drop any optimistic row the server has now confirmed, matched on its
+  // content and sender - otherwise a send that lands between two polls shows
+  // twice, once as the placeholder and once as the saved row.
+  const confirmed = new Set(
+    delta.filter((m) => m.sender_type === 'admin').map((m) => m.content),
+  );
+  for (const [key, m] of byId) {
+    if (key.startsWith('tmp_') && m.sender_type === 'admin' && confirmed.has(m.content)) {
+      byId.delete(key);
+    }
+  }
   return [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
@@ -129,35 +149,139 @@ export default function OwnerThread() {
     void qc.invalidateQueries({ queryKey: ['messaging', 'conversations'] });
   }, [qc, id]);
 
+  // ── Optimistic cache helpers ────────────────────────────────────────
+  //
+  // Every action here used to wait for the server and then refetch, so a tap
+  // on a reaction did nothing visible until the round trip finished. The web
+  // app has applied changes instantly for a while; mobile never got it, which
+  // is where "it doesn't feel smooth" actually came from - not list
+  // rendering, which FlatList already handles.
+  //
+  // Each mutation patches the cache, then reconciles: the saved row replaces
+  // the optimistic one on success, and the snapshot is restored on failure.
+  const threadKey = useMemo(() => ['messaging', 'thread', id], [id]);
+  const snapshot = useCallback(
+    () => qc.getQueryData<ThreadMessage[]>(threadKey),
+    [qc, threadKey],
+  );
+  const patch = useCallback(
+    (fn: (ms: ThreadMessage[]) => ThreadMessage[]) =>
+      qc.setQueryData<ThreadMessage[]>(threadKey, (old) => (old ? fn(old) : old)),
+    [qc, threadKey],
+  );
+  const rollback = useCallback(
+    (ctx?: { prev?: ThreadMessage[] }) => {
+      if (ctx?.prev) qc.setQueryData(threadKey, ctx.prev);
+    },
+    [qc, threadKey],
+  );
+  /** Patch one message by id, leaving the rest untouched. */
+  const patchOne = useCallback(
+    (messageId: string, fn: (m: ThreadMessage) => ThreadMessage) =>
+      patch((ms) => ms.map((m) => (m.id === messageId ? fn(m) : m))),
+    [patch],
+  );
+
   const send = useMutation({
     mutationFn: (text: string) =>
       ownerClientsApi.sendToClient(id, { content: text, replyTo: replyTo?.id }),
-    onSuccess: () => {
+    onMutate: (text: string) => {
+      const prev = snapshot();
+      const tmpId = `tmp_${Math.random().toString(36).slice(2)}`;
+      const tmp: ThreadMessage = {
+        id: tmpId,
+        sender_type: 'admin',
+        message_type: 'manual',
+        content: text,
+        is_read: false,
+        created_at: new Date().toISOString(),
+        metadata: replyTo
+          ? { reply: { id: replyTo.id, sender: replyTo.sender_type, preview: replyTo.content.slice(0, 120) } }
+          : {},
+      };
+      patch((ms) => [...ms, tmp]);
+      // Clear the composer now rather than on success: holding the typed text
+      // until the network answers is the pause that reads as lag.
       setDraft('');
       setReplyTo(null);
-      refresh();
+      return { prev, tmpId };
     },
-    onError: (e: Error) => Alert.alert('Message not sent', e.message),
+    onSuccess: (row, _text, ctx) => {
+      // Swap the placeholder for the saved row instead of refetching, so the
+      // message never flickers out and back in.
+      if (ctx?.tmpId && row) patch((ms) => ms.map((m) => (m.id === ctx.tmpId ? row : m)));
+      void qc.invalidateQueries({ queryKey: ['messaging', 'conversations'] });
+    },
+    onError: (e: Error, _text, ctx) => {
+      rollback(ctx);
+      Alert.alert('Message not sent', e.message);
+    },
   });
 
   const react = useMutation({
     mutationFn: ({ messageId, emoji }: { messageId: string; emoji: string }) =>
       ownerClientsApi.reactToClientMsg(id, messageId, emoji),
-    onSuccess: refresh,
+    onMutate: ({ messageId, emoji }) => {
+      const prev = snapshot();
+      patchOne(messageId, (m) => {
+        const reactions = { ...(m.metadata?.reactions ?? {}) };
+        // Tapping the same emoji again removes it, matching the server.
+        if (reactions.admin === emoji) delete reactions.admin;
+        else reactions.admin = emoji;
+        return { ...m, metadata: { ...(m.metadata ?? {}), reactions } };
+      });
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => rollback(ctx),
   });
+
   const pin = useMutation({
     mutationFn: ({ messageId, pinned }: { messageId: string; pinned: boolean }) =>
       ownerClientsApi.pinClientMsg(id, messageId, pinned),
-    onSuccess: refresh,
+    onMutate: ({ messageId, pinned }) => {
+      const prev = snapshot();
+      patchOne(messageId, (m) => ({
+        ...m,
+        metadata: {
+          ...(m.metadata ?? {}),
+          pinned_at: pinned ? new Date().toISOString() : undefined,
+        },
+      }));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => rollback(ctx),
   });
+
   const remove = useMutation({
     mutationFn: (messageId: string) => ownerClientsApi.deleteClientMsg(id, messageId),
-    onSuccess: refresh,
+    onMutate: (messageId: string) => {
+      const prev = snapshot();
+      // A soft delete, like the server's: the row stays and renders as
+      // "deleted", so the bubble does not vanish and reappear.
+      patchOne(messageId, (m) => ({
+        ...m,
+        metadata: { ...(m.metadata ?? {}), deleted_at: new Date().toISOString() },
+      }));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => rollback(ctx),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['messaging', 'conversations'] }),
   });
+
   const edit = useMutation({
     mutationFn: ({ messageId, content }: { messageId: string; content: string }) =>
       ownerClientsApi.editClientMsg(id, messageId, content),
-    onSuccess: refresh,
+    onMutate: ({ messageId, content }) => {
+      const prev = snapshot();
+      patchOne(messageId, (m) => ({
+        ...m,
+        content,
+        metadata: { ...(m.metadata ?? {}), edited_at: new Date().toISOString() },
+      }));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => rollback(ctx),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['messaging', 'conversations'] }),
   });
 
   const messages = threadQ.data ?? [];

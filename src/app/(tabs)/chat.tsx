@@ -56,11 +56,19 @@ const dayKey = (iso: string) => new Date(iso).toISOString().slice(0, 10);
 function cursorOf(held?: ClientMessage[]): string | undefined {
   if (!held?.length) return undefined;
   let max: string | undefined;
+  let sawServerRow = false;
   for (const m of held) {
+    // An optimistic row has no server timestamp yet. Skip it rather than
+    // abandoning the cursor, which would drop the thread back to full fetches
+    // for as long as one send is in flight.
+    if (m.id.startsWith('tmp_')) continue;
+    // A real row with no updated_at means an older server: fall back to a full
+    // fetch, which is correct if wasteful.
     if (!m.updated_at) return undefined;
+    sawServerRow = true;
     if (!max || m.updated_at > max) max = m.updated_at;
   }
-  return max;
+  return sawServerRow ? max : undefined;
 }
 
 /**
@@ -73,6 +81,17 @@ function mergeMessages(held: ClientMessage[], delta: ClientMessage[]): ClientMes
   if (!delta.length) return held;
   const byId = new Map(held.map((m) => [m.id, m]));
   for (const m of delta) byId.set(m.id, m);
+  // Drop any optimistic row the server has now confirmed, matched on content
+  // and sender - otherwise a send that lands between two polls shows twice,
+  // once as the placeholder and once as the saved row.
+  const confirmed = new Set(
+    delta.filter((m) => m.sender_type === 'client').map((m) => m.content),
+  );
+  for (const [key, m] of byId) {
+    if (key.startsWith('tmp_') && m.sender_type === 'client' && confirmed.has(m.content)) {
+      byId.delete(key);
+    }
+  }
   return [...byId.values()];
 }
 
@@ -161,10 +180,56 @@ export default function Chat() {
     retry: 1,
   });
 
+  /**
+   * Sending, applied to the screen immediately.
+   *
+   * This used to wait for the server and then refetch, so a tapped message sat
+   * in the input box until the round trip finished and only then appeared.
+   * That pause - not list rendering, which FlatList already handles - is what
+   * made the chat feel slow. The message now shows at once and the saved row
+   * replaces it, or it rolls back and the text comes back on failure.
+   */
   const sendMut = useMutation({
     mutationFn: clientsApi.sendMessage,
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['me', 'messages'] }),
-    onError: (err: Error) => Alert.alert('Could not send', err.message),
+    onMutate: (vars: {
+      content?: string;
+      attachment?: { url?: string; storageKey?: string; type: string; name?: string; size?: number };
+    }) => {
+      const prev = qc.getQueryData<ClientMessage[]>(['me', 'messages']);
+      const att = vars.attachment;
+      const tmpId = `tmp_${Math.random().toString(36).slice(2)}`;
+      const tmp: ClientMessage = {
+        id: tmpId,
+        sender_type: 'client',
+        message_type: att
+          ? (att.type.startsWith('image/') ? 'image' : att.type.startsWith('audio/') ? 'voice' : 'file')
+          : 'manual',
+        content: vars.content ?? '',
+        is_read: false,
+        created_at: new Date().toISOString(),
+        attachment_name: att?.name ?? null,
+        attachment_type: att?.type ?? null,
+        attachment_size: att?.size ?? null,
+        // No preview URL for a storage upload - the signed URL only exists
+        // once the server has saved the row, so an attachment bubble shows its
+        // name until then rather than a broken image.
+        attachment_url: att?.url ?? null,
+      };
+      qc.setQueryData<ClientMessage[]>(['me', 'messages'], (old) => [...(old ?? []), tmp]);
+      return { prev, tmpId };
+    },
+    onSuccess: (row, _vars, ctx) => {
+      // Swap the placeholder for the saved row rather than refetching, so the
+      // bubble never flickers out and back in.
+      if (ctx?.tmpId && row) {
+        qc.setQueryData<ClientMessage[]>(['me', 'messages'], (old) =>
+          (old ?? []).map((m) => (m.id === ctx.tmpId ? row : m)));
+      }
+    },
+    onError: (err: Error, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['me', 'messages'], ctx.prev);
+      Alert.alert('Could not send', err.message);
+    },
   });
 
   useEffect(() => {
@@ -178,7 +243,10 @@ export default function Chat() {
 
   const onSend = () => {
     const content = text.trim();
-    if (!content || sendMut.isPending) return;
+    if (!content) return;
+    // Deliberately not blocked on sendMut.isPending any more: each send is now
+    // its own optimistic bubble, so firing two quickly shows two messages
+    // instead of silently swallowing the second.
     setText('');
     sendMut.mutate({ content });
   };
