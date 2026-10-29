@@ -111,8 +111,13 @@ export interface ClientMessage {
   content: string;
   is_read: boolean;
   created_at: string;
+  /** Last change of any kind - the cursor an incremental poll advances on. */
+  updated_at?: string;
   metadata?: MessageMetadata | null;
+  /** A signed storage URL, or a legacy inlined data: URI on old messages. */
   attachment_url?: string | null;
+  /** Set on storage-backed attachments; internal, the client uses the URL. */
+  attachment_storage_key?: string | null;
   attachment_name?: string | null;
   attachment_type?: string | null;
   attachment_size?: number | null;

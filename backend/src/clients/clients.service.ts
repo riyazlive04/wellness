@@ -910,10 +910,19 @@ export class ClientsService {
     return rows;
   }
 
-  async myMessages(userId: string, limit = 50): Promise<ClientMessage[]> {
+  /**
+   * The client's own thread.
+   *
+   * `since` makes the poll incremental, exactly as on the practitioner side -
+   * same updated_at cursor, same millisecond truncation. This is the screen a
+   * client leaves open, and the data is theirs, so a poll that re-sends the
+   * whole conversation every few seconds is spending their allowance.
+   */
+  async myMessages(userId: string, limit = 50, since?: string): Promise<ClientMessage[]> {
     const lim = clamp(limit, 1, 200);
     const rows = await this.prisma.$queryRawUnsafe<ClientMessage[]>(
-      `SELECT m.id, m.sender_type, m.message_type, m.content, m.is_read, m.created_at,
+      `SELECT m.id, m.sender_type, m.message_type, m.content, m.is_read,
+              m.created_at, m.updated_at,
               m.metadata, m.attachment_url, m.attachment_storage_key,
               m.attachment_name, m.attachment_type, m.attachment_size
          FROM public.messages m
@@ -921,10 +930,17 @@ export class ClientsService {
         WHERE c.user_id = $1::uuid
           AND COALESCE(m.metadata->>'status', '') <> 'scheduled'
           AND COALESCE(m.metadata->>'hidden_client', '') <> 'true'
+          -- Millisecond truncation on both sides: a JavaScript Date cannot
+          -- carry the microseconds Postgres stores, so the cursor comes back
+          -- slightly rounded down and a plain comparison would report the
+          -- newest row as newer than its own cursor on every poll.
+          AND ($3::timestamptz IS NULL
+               OR date_trunc('milliseconds', m.updated_at) > $3::timestamptz)
         ORDER BY m.created_at DESC
         LIMIT $2`,
       userId,
       lim,
+      since ?? null,
     );
     await this.signAttachments(rows);
     return rows;

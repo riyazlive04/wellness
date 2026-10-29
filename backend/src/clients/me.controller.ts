@@ -271,9 +271,17 @@ export class MeController {
 
   @Get('messages')
   @ApiOperation({ summary: 'Caller\'s message thread with their nutritionist + system messages.' })
-  async messages(@CurrentUser() user: AuthUser, @Query('limit') limit?: string) {
+  async messages(
+    @CurrentUser() user: AuthUser,
+    @Query('limit') limit?: string,
+    /** ISO timestamp: return only messages changed since then (incremental poll). */
+    @Query('since') since?: string,
+  ) {
     const n = limit ? Number(limit) : 50;
-    return { data: await this.clients.myMessages(user.id, Number.isFinite(n) ? n : 50) };
+    const cursor = since && !Number.isNaN(Date.parse(since)) ? since : undefined;
+    return {
+      data: await this.clients.myMessages(user.id, Number.isFinite(n) ? n : 50, cursor),
+    };
   }
 
   @Get('program')
