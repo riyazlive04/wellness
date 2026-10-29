@@ -533,7 +533,7 @@ export default function OwnerBilling() {
               {/* Monthly / annual switch */}
               <motion.div variants={fadeUp} className="flex flex-col items-center gap-2">
                 <CycleToggle cycle={cycle} onChange={setCycle} />
-                <p className="text-xs text-foreground/55">All prices include 18% GST. You get a GST invoice with every payment.</p>
+                <p className="text-xs text-foreground/55">Plan prices are shown without GST; 18% is added at checkout. You get a GST invoice with every payment.</p>
                 {/* Said once here rather than repeated on every card: the
                     AutoPay mandate is the thing people are surprised by. */}
                 {!hasRazorpaySubscription && !devMode && (

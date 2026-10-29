@@ -84,7 +84,7 @@ export function SiteTerms() {
       <section>
         <H>Payment</H>
         <UL items={[
-          'Subscriptions are billed monthly or yearly in advance. Prices shown include 18% GST.',
+          'Subscriptions are billed monthly or yearly in advance. Plan prices are quoted exclusive of GST; 18% GST is added at checkout and shown on your invoice. One-time setup fees are inclusive of GST.',
           'A one-time setup fee is charged with your first invoice. It is charged once; changing to a plan with a higher fee charges only the difference.',
           'Payments are processed by Razorpay. We do not store your card details.',
           'If a payment fails we will retry and tell you. Repeated failure may suspend your account until it is settled.',
