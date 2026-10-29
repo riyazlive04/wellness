@@ -28,7 +28,12 @@ export class InvoicePaymentsService {
     const rows = await this.prisma.$queryRawUnsafe<RawPayment[]>(
       `SELECT p.id, p.invoice_id, p.amount_paise, p.method, p.reference, p.note,
               p.received_at, p.instalment_id, p.created_at,
-              (SELECT name FROM public.profiles u WHERE u.id = p.recorded_by) AS recorded_by_name
+              -- public.profiles exists but is empty in this deployment; names
+              -- live on the auth user, as team.service and usage-detail read
+              -- them. Email is the fallback so the column is never blank for
+              -- a member who never set a display name.
+              (SELECT COALESCE(u.raw_user_meta_data->>'name', u.email::text)
+                 FROM auth.users u WHERE u.id = p.recorded_by) AS recorded_by_name
          FROM public.practice_invoice_payments p
         WHERE p.invoice_id = $1::uuid AND p.workspace_id = $2::uuid
         ORDER BY p.received_at, p.created_at`,
