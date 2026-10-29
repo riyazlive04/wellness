@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, FileText, Loader2, Plus, Send, Trash2, Wallet, X } from 'lucide-react';
+import { Download, FileText, Loader2, Plus, Send, Trash2, Wallet, X, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -55,6 +55,12 @@ export function InvoicesTab({ clientId, clientName }: { clientId: string; client
       clientsApi.markInvoicePaid(id, { method }),
     onSuccess: () => { invalidate(); toast.success('Marked as paid.'); },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not mark it paid.'),
+  });
+
+  const unpay = useMutation({
+    mutationFn: (id: string) => clientsApi.unmarkInvoicePaid(id),
+    onSuccess: () => { void q.refetch(); toast.success('Payment undone - the invoice is unpaid again.'); },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not undo it.'),
   });
 
   const voidIt = useMutation({
@@ -161,6 +167,25 @@ export function InvoicesTab({ clientId, clientName }: { clientId: string; client
                       className="inline-flex items-center gap-1 rounded-full bg-teal-700 px-2.5 py-1 text-[11px] font-semibold text-teal-50 hover:bg-teal-800 disabled:opacity-40"
                     >
                       <Wallet className="h-3 w-3" /> Mark paid
+                    </button>
+                  )}
+
+                  {/* Undo a mis-click. Marking paid used to be a one-way
+                      door: the only way back was voiding a real invoice,
+                      which loses its number from the practice's own run. */}
+                  {inv.status === 'paid' && (
+                    <button
+                      type="button"
+                      title="Recorded by mistake?"
+                      disabled={unpay.isPending}
+                      onClick={() => {
+                        if (window.confirm(`Undo the payment on ${inv.display_number}? It goes back to unpaid.`)) {
+                          unpay.mutate(inv.id);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 rounded-full border border-foreground/12 px-2.5 py-1 text-[11px] font-semibold text-foreground/70 hover:bg-foreground/[0.05] disabled:opacity-40"
+                    >
+                      <Undo2 className="h-3 w-3" /> Not paid
                     </button>
                   )}
 

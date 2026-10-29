@@ -31,6 +31,9 @@ class SaveInvoiceDto {
   @IsOptional() @IsNumber() @Min(0) @Max(100) tax_percent?: number;
 
   @IsOptional() @IsString() @MaxLength(2000) notes?: string;
+
+  /** Printed at the foot of the invoice. Defaults to the practice's own. */
+  @IsOptional() @IsString() @MaxLength(4000) terms?: string;
   @IsOptional() @IsISO8601() due_at?: string;
 }
 
@@ -95,6 +98,7 @@ export class PracticeInvoicesController {
         tax_percent: dto.tax_percent,
         notes: dto.notes,
         due_at: dto.due_at,
+        terms: dto.terms,
       }),
     };
   }
@@ -102,7 +106,7 @@ export class PracticeInvoicesController {
   @Patch(':id')
   @WorkspaceRole('owner', 'manager', 'nutritionist')
   @RequirePermission('clients.write')
-  @ApiOperation({ summary: 'Edit a draft. An issued invoice is immutable.' })
+  @ApiOperation({ summary: 'Edit an invoice. Only a voided one is closed.' })
   async update(
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -131,6 +135,15 @@ export class PracticeInvoicesController {
     @Body() dto: MarkPaidDto,
   ) {
     return { data: await this.invoices.markPaid(this.ws(user), id, dto) };
+  }
+
+  @Post(':id/unpaid')
+  @HttpCode(200)
+  @WorkspaceRole('owner', 'manager', 'nutritionist')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: 'Undo a payment recorded by mistake; back to sent.' })
+  async unmarkPaid(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return { data: await this.invoices.unmarkPaid(this.ws(user), id) };
   }
 
   @Post(':id/void')

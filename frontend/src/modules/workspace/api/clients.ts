@@ -701,6 +701,8 @@ export interface PracticeInvoice {
   tax_paise: number;
   total_paise: number;
   notes: string | null;
+  /** Printed at the foot of the invoice; copied from the practice default. */
+  terms: string | null;
   issued_at: string | null;
   due_at: string | null;
   paid_at: string | null;
@@ -1045,6 +1047,9 @@ export const clientsApi = {
     api.post<PracticeInvoice>(`/api/v1/workspaces/me/invoices/${id}/send`, { body: {} }),
   markInvoicePaid: (id: string, body: { method?: string; note?: string; paid_at?: string }) =>
     api.post<PracticeInvoice>(`/api/v1/workspaces/me/invoices/${id}/paid`, { body }),
+  /** Undo a payment recorded by mistake; the invoice returns to 'sent'. */
+  unmarkInvoicePaid: (id: string) =>
+    api.post<PracticeInvoice>(`/api/v1/workspaces/me/invoices/${id}/unpaid`, { body: {} }),
   voidInvoice: (id: string) =>
     api.post<PracticeInvoice>(`/api/v1/workspaces/me/invoices/${id}/void`, { body: {} }),
 

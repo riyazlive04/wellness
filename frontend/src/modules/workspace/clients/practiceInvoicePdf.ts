@@ -172,6 +172,33 @@ export async function generatePracticeInvoicePdf(
     y += wrapped.length * 12 + 8;
   }
 
+  // ── Terms and conditions ───────────────────────────────────────────
+  // Set apart from the notes with a rule and a heading: notes are about this
+  // one invoice, terms are the agreement, and a practice printing them wants
+  // them to read as the agreement.
+  if (invoice.terms) {
+    y += 6;
+    doc.setDrawColor(225);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, right, y);
+    y += 14;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text('TERMS & CONDITIONS', margin, y);
+    y += 12;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(110);
+    const t = doc.splitTextToSize(invoice.terms, right - margin) as string[];
+    // Leave room for the footer line rather than printing over it.
+    const room = Math.max(0, Math.floor((780 - y) / 10));
+    doc.text(t.slice(0, room), margin, y);
+    y += Math.min(t.length, room) * 10 + 6;
+  }
+
   // ── Footer ─────────────────────────────────────────────────────────
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);

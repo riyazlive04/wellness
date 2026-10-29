@@ -30,7 +30,7 @@ export class PracticeInvoicesService {
   private readonly COLS = `
     id, workspace_id, client_id, number, status, items,
     subtotal_paise, tax_percent::float AS tax_percent, tax_paise, total_paise,
-    notes, issued_at, due_at, paid_at, paid_method, paid_note, created_at, updated_at`;
+    notes, terms, issued_at, due_at, paid_at, paid_method, paid_note, created_at, updated_at`;
 
   /** Rows for the practice's own list, newest first. */
   async list(workspaceId: string, clientId?: string): Promise<InvoiceRow[]> {
@@ -74,7 +74,7 @@ export class PracticeInvoicesService {
     workspaceId: string,
     clientId: string,
     userId: string,
-    input: { items: unknown; tax_percent?: number; notes?: string; due_at?: string },
+    input: { items: unknown; tax_percent?: number; notes?: string; due_at?: string; terms?: string },
   ): Promise<InvoiceRow> {
     const lines = normaliseLines(input.items);
     const totals = computeTotals(lines, input.tax_percent ?? 0);
@@ -85,12 +85,15 @@ export class PracticeInvoicesService {
           `INSERT INTO public.practice_invoices
              (workspace_id, client_id, number, status, items,
               subtotal_paise, tax_percent, tax_paise, total_paise,
-              notes, due_at, created_by)
+              notes, due_at, created_by, terms)
            VALUES (
              $1::uuid, $2::uuid,
              (SELECT COALESCE(MAX(number), 0) + 1
                 FROM public.practice_invoices WHERE workspace_id = $1::uuid),
-             'draft', $3::jsonb, $4, $5, $6, $7, $8, $9::timestamptz, $10::uuid
+             'draft', $3::jsonb, $4, $5, $6, $7, $8, $9::timestamptz, $10::uuid,
+             -- The practice's standard terms, captured now. Editing the
+             -- default later must not rewrite invoices already issued.
+             COALESCE($11, (SELECT invoice_terms FROM public.workspaces WHERE id = $1::uuid))
            )
            RETURNING ${this.COLS}, NULL::text AS client_name`,
           workspaceId,
@@ -103,6 +106,7 @@ export class PracticeInvoicesService {
           input.notes?.trim() || null,
           input.due_at || null,
           userId,
+          input.terms?.trim() || null,
         );
         return toRow(row);
       } catch (err) {
@@ -113,16 +117,24 @@ export class PracticeInvoicesService {
     throw new ConflictException('Could not allocate an invoice number. Please try again.');
   }
 
-  /** Edit a draft. Anything issued is immutable - void it and start again. */
+  /** Edit an invoice. Only a voided one is closed to further changes. */
   async update(
     workspaceId: string,
     id: string,
-    input: { items?: unknown; tax_percent?: number; notes?: string; due_at?: string },
+    input: {
+      items?: unknown; tax_percent?: number; notes?: string;
+      due_at?: string; terms?: string;
+    },
   ): Promise<InvoiceRow> {
     const current = await this.get(workspaceId, id);
-    if (current.status !== 'draft') {
+    // A voided invoice is a closed record and stays closed. Everything else
+    // can be corrected: an invoice issued with the wrong amount, or marked
+    // paid by a mis-click, used to be unfixable except by voiding it and
+    // re-issuing - which leaves a hole in the practice's own numbering for
+    // what was a typing mistake.
+    if (current.status === 'void') {
       throw new BadRequestException(
-        'This invoice has already been issued. Void it and create a new one instead.',
+        'This invoice was voided. Create a new one instead.',
       );
     }
 
@@ -137,7 +149,8 @@ export class PracticeInvoicesService {
           SET items = $3::jsonb,
               subtotal_paise = $4, tax_percent = $5, tax_paise = $6, total_paise = $7,
               notes = COALESCE($8, notes),
-              due_at = COALESCE($9::timestamptz, due_at)
+              due_at = COALESCE($9::timestamptz, due_at),
+              terms = COALESCE($10, terms)
         WHERE id = $1::uuid AND workspace_id = $2::uuid
         RETURNING ${this.COLS}, NULL::text AS client_name`,
       id,
@@ -149,6 +162,7 @@ export class PracticeInvoicesService {
       totals.total_paise,
       input.notes?.trim() ?? null,
       input.due_at ?? null,
+      input.terms?.trim() ?? null,
     );
     return toRow(row);
   }
@@ -199,6 +213,37 @@ export class PracticeInvoicesService {
       paidAt.toISOString(),
       input.method?.trim() || null,
       input.note?.trim() || null,
+    );
+    return toRow(row);
+  }
+
+  /**
+   * Undo a payment that was recorded by mistake.
+   *
+   * Marking an invoice paid was a one-way door: `markPaid` returns silently
+   * when it is already paid, and nothing else could move it back. A practice
+   * that clicked the wrong row had to void a real invoice and re-issue it,
+   * which loses the original number.
+   *
+   * The invoice returns to 'sent' rather than 'draft': it genuinely was sent
+   * to the client, and a client who can see their invoices should not watch
+   * one disappear because the practice fixed its own bookkeeping.
+   */
+  async unmarkPaid(workspaceId: string, id: string): Promise<InvoiceRow> {
+    const current = await this.get(workspaceId, id);
+    if (current.status === 'void') {
+      throw new BadRequestException('This invoice was voided.');
+    }
+    if (current.status !== 'paid') return current;   // nothing to undo
+
+    const [row] = await this.prisma.$queryRawUnsafe<RawRow[]>(
+      `UPDATE public.practice_invoices
+          SET status = 'sent',
+              paid_at = NULL, paid_method = NULL, paid_note = NULL
+        WHERE id = $1::uuid AND workspace_id = $2::uuid
+        RETURNING ${this.COLS}, NULL::text AS client_name`,
+      id,
+      workspaceId,
     );
     return toRow(row);
   }
@@ -276,6 +321,7 @@ interface RawRow {
   tax_paise: number;
   total_paise: number;
   notes: string | null;
+  terms: string | null;
   issued_at: Date | null;
   due_at: Date | null;
   paid_at: Date | null;
