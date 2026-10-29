@@ -104,6 +104,8 @@ export class WorkspacesController {
       data: {
         name: ws.display_name ?? ws.name,
         legal_name: ws.legal_name,
+        // The practice's own GSTIN, for the invoices they issue. Not NUSI's.
+        gstin: ws.gstin,
         // No logo uploaded: the owner's account photo stands in.
         logo_url: await practiceLogo(this.prisma, user.workspaceId, ws.logo_url),
         brand_color: ws.brand_color,

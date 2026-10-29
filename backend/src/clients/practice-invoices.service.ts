@@ -36,7 +36,9 @@ export class PracticeInvoicesService {
   async list(workspaceId: string, clientId?: string): Promise<InvoiceRow[]> {
     const rows = await this.prisma.$queryRawUnsafe<RawRow[]>(
       `SELECT ${this.COLS},
-              (SELECT name FROM public.clients c WHERE c.id = i.client_id) AS client_name
+              (SELECT name  FROM public.clients c WHERE c.id = i.client_id) AS client_name,
+              (SELECT email FROM public.clients c WHERE c.id = i.client_id) AS client_email,
+              (SELECT phone FROM public.clients c WHERE c.id = i.client_id) AS client_phone
          FROM public.practice_invoices i
         WHERE i.workspace_id = $1::uuid
           AND ($2::uuid IS NULL OR i.client_id = $2::uuid)
@@ -52,7 +54,9 @@ export class PracticeInvoicesService {
   async get(workspaceId: string, id: string): Promise<InvoiceRow> {
     const [row] = await this.prisma.$queryRawUnsafe<RawRow[]>(
       `SELECT ${this.COLS},
-              (SELECT name FROM public.clients c WHERE c.id = i.client_id) AS client_name
+              (SELECT name  FROM public.clients c WHERE c.id = i.client_id) AS client_name,
+              (SELECT email FROM public.clients c WHERE c.id = i.client_id) AS client_email,
+              (SELECT phone FROM public.clients c WHERE c.id = i.client_id) AS client_phone
          FROM public.practice_invoices i
         WHERE i.id = $1::uuid AND i.workspace_id = $2::uuid LIMIT 1`,
       id,
@@ -95,7 +99,8 @@ export class PracticeInvoicesService {
              -- default later must not rewrite invoices already issued.
              COALESCE($11, (SELECT invoice_terms FROM public.workspaces WHERE id = $1::uuid))
            )
-           RETURNING ${this.COLS}, NULL::text AS client_name`,
+           RETURNING ${this.COLS}, NULL::text AS client_name,
+                  NULL::text AS client_email, NULL::text AS client_phone`,
           workspaceId,
           clientId,
           JSON.stringify(lines),
@@ -152,7 +157,8 @@ export class PracticeInvoicesService {
               due_at = COALESCE($9::timestamptz, due_at),
               terms = COALESCE($10, terms)
         WHERE id = $1::uuid AND workspace_id = $2::uuid
-        RETURNING ${this.COLS}, NULL::text AS client_name`,
+        RETURNING ${this.COLS}, NULL::text AS client_name,
+                  NULL::text AS client_email, NULL::text AS client_phone`,
       id,
       workspaceId,
       JSON.stringify(lines),
@@ -207,7 +213,8 @@ export class PracticeInvoicesService {
               -- A draft marked paid directly was still issued to the client.
               issued_at = COALESCE(issued_at, now())
         WHERE id = $1::uuid AND workspace_id = $2::uuid
-        RETURNING ${this.COLS}, NULL::text AS client_name`,
+        RETURNING ${this.COLS}, NULL::text AS client_name,
+                  NULL::text AS client_email, NULL::text AS client_phone`,
       id,
       workspaceId,
       paidAt.toISOString(),
@@ -241,7 +248,8 @@ export class PracticeInvoicesService {
           SET status = 'sent',
               paid_at = NULL, paid_method = NULL, paid_note = NULL
         WHERE id = $1::uuid AND workspace_id = $2::uuid
-        RETURNING ${this.COLS}, NULL::text AS client_name`,
+        RETURNING ${this.COLS}, NULL::text AS client_name,
+                  NULL::text AS client_email, NULL::text AS client_phone`,
       id,
       workspaceId,
     );
@@ -297,7 +305,8 @@ export class PracticeInvoicesService {
           SET status = $3,
               issued_at = CASE WHEN $4::boolean THEN COALESCE(issued_at, now()) ELSE issued_at END
         WHERE id = $1::uuid AND workspace_id = $2::uuid
-        RETURNING ${this.COLS}, NULL::text AS client_name`,
+        RETURNING ${this.COLS}, NULL::text AS client_name,
+                  NULL::text AS client_email, NULL::text AS client_phone`,
       id,
       workspaceId,
       status,
@@ -330,6 +339,8 @@ interface RawRow {
   created_at: Date;
   updated_at: Date;
   client_name: string | null;
+  client_email: string | null;
+  client_phone: string | null;
 }
 
 export interface InvoiceRow extends Omit<RawRow, 'items' | 'issued_at' | 'due_at' | 'paid_at' | 'created_at' | 'updated_at'> {

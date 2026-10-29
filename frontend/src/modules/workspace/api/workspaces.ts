@@ -76,6 +76,7 @@ export interface IntegrationReport {
 export interface WorkspaceBranding {
   name: string;
   legal_name?: string | null;
+  gstin?: string | null;
   logo_url: string | null;
   brand_color: string | null;
   brand_accent: string | null;

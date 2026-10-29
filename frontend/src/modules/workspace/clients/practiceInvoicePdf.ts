@@ -52,41 +52,93 @@ export async function generatePracticeInvoicePdf(
     rightMeta: `Issued ${date(invoice.issued_at ?? invoice.created_at)}`,
   });
 
-  // The practice's GSTIN, which the shared header does not carry.
-  if (practice.gstin) {
+  // The practice's GSTIN, which the shared header does not carry. Taken from
+  // the brand when the caller does not pass one - every caller omitted it,
+  // so no invoice ever showed a GSTIN.
+  const gstin = practice.gstin ?? brand.gstin;
+  if (gstin) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(110);
-    doc.text(`GSTIN: ${practice.gstin}`, margin, y);
+    doc.text(`GSTIN: ${gstin}`, margin, y);
     y += 16;
   }
 
   y += 6;
 
-  // ── Billed to ──────────────────────────────────────────────────────
+  // ── Billed to, and the dates, side by side ─────────────────────────
+  // A client needs to see who the invoice is for and the three dates that
+  // govern it without hunting: issued, due, and whether it is settled.
   const who = practice.clientName ?? invoice.client_name;
+  const blockTop = y;
+
   if (who) {
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(110);
+    doc.setFontSize(8);
+    doc.setTextColor(120);
     doc.text('BILLED TO', margin, y);
-    y += 14;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
+    y += 15;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11.5);
     doc.setTextColor(20);
     doc.text(who, margin, y);
-    y += 20;
-  }
+    y += 14;
 
-  if (invoice.due_at) {
+    // Contact details, so the document stands on its own as a record rather
+    // than relying on whoever sent it to remember who it went to.
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(110);
-    doc.text(`Due ${date(invoice.due_at)}`, margin, y);
-    y += 18;
+    for (const line of [invoice.client_email, invoice.client_phone].filter(Boolean)) {
+      doc.text(String(line), margin, y);
+      y += 12;
+    }
   }
 
-  y += 4;
+  // Dates run down the right of the same block.
+  {
+    let ry = blockTop;
+    const label = 330;
+    const value = right;
+    const row = (k: string, v: string, colour: [number, number, number] = [40, 40, 40]) => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(130);
+      doc.text(k, label, ry);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...colour);
+      doc.text(v, value, ry, { align: 'right' });
+      ry += 15;
+    };
+
+    row('Invoice date', date(invoice.issued_at ?? invoice.created_at));
+    if (invoice.due_at) {
+      const overdue =
+        invoice.status === 'sent' && new Date(invoice.due_at).getTime() < Date.now();
+      // An overdue invoice says so in red: the date alone makes the reader
+      // do the arithmetic, which is exactly when it gets ignored.
+      row('Due date', date(invoice.due_at), overdue ? [190, 50, 50] : [40, 40, 40]);
+      if (overdue) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(190, 50, 50);
+        doc.text('OVERDUE', value, ry, { align: 'right' });
+        ry += 14;
+      }
+    }
+    row(
+      'Status',
+      invoice.status === 'paid' ? 'Paid'
+        : invoice.status === 'void' ? 'Void'
+        : invoice.status === 'draft' ? 'Draft'
+        : 'Awaiting payment',
+      invoice.status === 'paid' ? [20, 120, 70] : [40, 40, 40],
+    );
+    y = Math.max(y, ry);
+  }
+
+  y += 10;
 
   // ── Lines ──────────────────────────────────────────────────────────
   doc.setDrawColor(220);
@@ -161,6 +213,33 @@ export async function generatePracticeInvoicePdf(
     y += 20;
   }
 
+  // ── How to pay ─────────────────────────────────────────────────────
+  // An unpaid invoice that does not say how to pay it makes the client ask,
+  // which is the delay a practice is trying to avoid. Only shown while money
+  // is actually owed.
+  if (invoice.status === 'sent' || invoice.status === 'draft') {
+    const payTo = [brand.contactLine, brand.legalName].filter(Boolean)[0];
+    if (payTo) {
+      y += 12;
+      doc.setFillColor(248, 249, 247);
+      doc.roundedRect(margin, y - 12, right - margin, 44, 4, 4, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.text('HOW TO PAY', margin + 12, y + 2);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(70);
+      const lines = doc.splitTextToSize(
+        `Pay ${brand.legalName ?? brand.practiceName} directly and this invoice will be marked paid. ` +
+          `Questions: ${brand.contactLine ?? ''}`.trim(),
+        right - margin - 24,
+      ) as string[];
+      doc.text(lines.slice(0, 2), margin + 12, y + 16);
+      y += 48;
+    }
+  }
+
   // ── Notes ──────────────────────────────────────────────────────────
   if (invoice.notes) {
     y += 10;
@@ -203,10 +282,15 @@ export async function generatePracticeInvoicePdf(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(150);
+  // The practice's own footer note first, then the standing disclaimer.
+  if (brand.footerNote) {
+    const note = doc.splitTextToSize(brand.footerNote, right - margin) as string[];
+    doc.text(note.slice(0, 2), margin, 788);
+  }
   doc.text(
     'This is a computer-generated invoice and does not require a signature.',
     margin,
-    800,
+    brand.footerNote ? 812 : 800,
   );
 
   const name = `${invoice.display_number}${who ? `-${who.replace(/[^a-z0-9]+/gi, '-')}` : ''}.pdf`;

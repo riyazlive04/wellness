@@ -24,6 +24,7 @@ const PLATFORM_LOGO = '/nusi-logo.png';
 export interface PdfBrand {
   practiceName: string;
   legalName: string | null;
+  gstin: string | null;
   logo: string | null;
   logoFmt: 'PNG' | 'JPEG';
   primary: RGB;
@@ -111,6 +112,7 @@ export async function resolvePdfBrand(): Promise<PdfBrand> {
     tagline: b?.tagline || null,
     contactLine: b?.pdf_contact_line || null,
     footerNote: b?.pdf_footer_note || null,
+    gstin: b?.gstin || null,
     whiteLabel,
   };
 }
