@@ -716,8 +716,14 @@ export interface PracticeInvoice {
 export interface SaveInvoiceInput {
   items?: InvoiceLine[];
   tax_percent?: number;
+  /** Omit to keep what is stored; send '' to clear it. */
   notes?: string;
   due_at?: string;
+  /**
+   * Printed under TERMS & CONDITIONS. Omitted on create, the practice default
+   * from Settings is copied in. Omit to keep, send '' to clear.
+   */
+  terms?: string;
 }
 
 export interface FileItem {

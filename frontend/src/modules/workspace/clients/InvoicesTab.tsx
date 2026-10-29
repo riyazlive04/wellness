@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, FileText, Loader2, Plus, Send, Trash2, Wallet, X, Undo2 } from 'lucide-react';
+import { Download, FileText, Loader2, Pencil, Plus, Send, Trash2, Wallet, X, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -37,6 +37,8 @@ const STATUS: Record<PracticeInvoice['status'], { label: string; cls: string }> 
 export function InvoicesTab({ clientId, clientName }: { clientId: string; clientName: string }) {
   const qc = useQueryClient();
   const [building, setBuilding] = useState(false);
+  /** The invoice open in the builder for correction, if any. */
+  const [editing, setEditing] = useState<PracticeInvoice | null>(null);
 
   const q = useQuery({
     queryKey: ['client', clientId, 'invoices'],
@@ -150,6 +152,19 @@ export function InvoicesTab({ clientId, clientName }: { clientId: string; client
                     <Download className="h-3.5 w-3.5" />
                   </button>
 
+                  {/* Correct any invoice that is not voided - including one
+                      already sent or paid. A wrong amount on a sent invoice
+                      used to mean voiding it and re-issuing, which burns a
+                      number out of the practice's own run. */}
+                  {inv.status !== 'void' && (
+                    <button
+                      type="button" title="Edit" onClick={() => setEditing(inv)}
+                      className="grid h-7 w-7 place-items-center rounded-lg text-foreground/50 hover:bg-foreground/[0.06] hover:text-foreground"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+
                   {inv.status === 'draft' && (
                     <button
                       type="button" onClick={() => send.mutate(inv.id)} disabled={send.isPending}
@@ -209,12 +224,16 @@ export function InvoicesTab({ clientId, clientName }: { clientId: string; client
         )}
       </Glass>
 
-      {building && (
+      {(building || editing) && (
         <InvoiceBuilder
+          // Remount when a different invoice is opened, so the form's initial
+          // state is taken from it rather than kept from the last one.
+          key={editing?.id ?? 'new'}
           clientId={clientId}
           clientName={clientName}
-          onClose={() => setBuilding(false)}
-          onSaved={() => { setBuilding(false); invalidate(); }}
+          existing={editing ?? undefined}
+          onClose={() => { setBuilding(false); setEditing(null); }}
+          onSaved={() => { setBuilding(false); setEditing(null); invalidate(); }}
         />
       )}
     </div>
@@ -229,25 +248,52 @@ const BLANK: InvoiceLine = { description: '', quantity: 1, unit_paise: 0 };
 const PRESETS = ['Consultation', 'Follow-up consultation', 'Diet plan', 'Monthly programme'];
 
 function InvoiceBuilder({
-  clientId, clientName, onClose, onSaved,
+  clientId, clientName, existing, onClose, onSaved,
 }: {
-  clientId: string; clientName: string; onClose: () => void; onSaved: () => void;
+  clientId: string;
+  clientName: string;
+  /** Absent = new invoice. Present = correct this one, whatever its status. */
+  existing?: PracticeInvoice;
+  onClose: () => void;
+  onSaved: () => void;
 }) {
-  const [lines, setLines] = useState<InvoiceLine[]>([{ ...BLANK }]);
-  const [taxPercent, setTaxPercent] = useState(0);
-  const [notes, setNotes] = useState('');
+  const editing = !!existing;
+  const [lines, setLines] = useState<InvoiceLine[]>(
+    existing?.items.length ? existing.items.map((l) => ({ ...l })) : [{ ...BLANK }],
+  );
+  const [taxPercent, setTaxPercent] = useState(existing?.tax_percent ?? 0);
+  const [notes, setNotes] = useState(existing?.notes ?? '');
+  const [terms, setTerms] = useState(existing?.terms ?? '');
+  // Terms are usually the practice default and want no attention, so the box
+  // stays folded away unless this invoice actually carries something.
+  const [showTerms, setShowTerms] = useState(!!existing?.terms);
 
   const create = useMutation({
-    mutationFn: (sendNow: boolean) =>
-      clientsApi
-        .createInvoice(clientId, {
-          items: lines.filter((l) => l.description.trim() && l.unit_paise > 0),
-          tax_percent: taxPercent,
-          notes: notes.trim() || undefined,
-        })
-        .then((inv) => (sendNow ? clientsApi.sendInvoice(inv.id) : inv)),
+    mutationFn: (sendNow: boolean) => {
+      const body = {
+        items: lines.filter((l) => l.description.trim() && l.unit_paise > 0),
+        tax_percent: taxPercent,
+        // '' rather than undefined: the server reads an omitted field as
+        // "keep" and a blank one as "clear", so emptying the box must send
+        // the blank through. On create there is nothing to keep, but a blank
+        // terms must not be mistaken for "use the practice default" either -
+        // only an untouched box means that.
+        notes: editing ? notes.trim() : notes.trim() || undefined,
+        ...(editing || showTerms ? { terms: terms.trim() } : {}),
+      };
+      const saved = existing
+        ? clientsApi.updateInvoice(existing.id, body)
+        : clientsApi.createInvoice(clientId, body);
+      return saved.then((inv) => (sendNow ? clientsApi.sendInvoice(inv.id) : inv));
+    },
     onSuccess: (_r, sendNow) => {
-      toast.success(sendNow ? `Invoice sent to ${clientName.split(' ')[0]}.` : 'Draft saved.');
+      toast.success(
+        editing
+          ? `${existing?.display_number} updated.`
+          : sendNow
+            ? `Invoice sent to ${clientName.split(' ')[0]}.`
+            : 'Draft saved.',
+      );
       onSaved();
     },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not save the invoice.'),
@@ -265,8 +311,17 @@ function InvoiceBuilder({
       <Glass variant="heavy" className="flex max-h-[90vh] w-full max-w-2xl flex-col p-6">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">New invoice</h2>
-            <p className="mt-0.5 text-xs text-foreground/60">For {clientName}</p>
+            <h2 className="text-lg font-semibold tracking-tight">
+              {editing ? `Edit ${existing?.display_number}` : 'New invoice'}
+            </h2>
+            <p className="mt-0.5 text-xs text-foreground/60">
+              For {clientName}
+              {editing && existing?.status === 'paid'
+                ? ' · already marked paid — the amount will change on your records'
+                : editing && existing?.status === 'sent'
+                  ? ' · already sent — download the PDF again afterwards'
+                  : ''}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -354,6 +409,38 @@ function InvoiceBuilder({
             className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-400/60 focus:outline-none"
           />
 
+          {/* Terms & conditions. Left alone, a new invoice inherits the
+              practice default from Settings → Branding, so most invoices need
+              nothing here - this is the per-invoice override. */}
+          {showTerms ? (
+            <div>
+              <label className="mb-1 block text-[11px] uppercase tracking-[0.16em] text-foreground/55">
+                Terms &amp; conditions
+              </label>
+              <textarea
+                value={terms}
+                onChange={(e) => setTerms(e.target.value)}
+                rows={3}
+                maxLength={4000}
+                placeholder="Payment terms, cancellation policy, refund rules…"
+                className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-400/60 focus:outline-none"
+              />
+              <p className="mt-1 text-[10px] text-foreground/45">
+                {editing
+                  ? 'Printed on this invoice only. Clear the box to print none.'
+                  : 'Printed on this invoice only. Leave blank to print none.'}
+              </p>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowTerms(true)}
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-foreground/60 underline decoration-foreground/20 underline-offset-4 hover:text-foreground"
+            >
+              <Plus className="h-3 w-3" /> Terms &amp; conditions for this invoice
+            </button>
+          )}
+
           <label className="flex items-center gap-2 text-xs text-foreground/65">
             <input
               type="checkbox"
@@ -388,23 +475,40 @@ function InvoiceBuilder({
             >
               Cancel
             </button>
-            <button
-              type="button"
-              disabled={valid.length === 0 || create.isPending}
-              onClick={() => create.mutate(false)}
-              className="rounded-full border border-foreground/15 px-4 py-2 text-sm font-medium hover:bg-foreground/[0.05] disabled:opacity-40"
-            >
-              Save as draft
-            </button>
-            <button
-              type="button"
-              disabled={valid.length === 0 || create.isPending}
-              onClick={() => create.mutate(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-teal-50 hover:bg-teal-800 disabled:opacity-40"
-            >
-              {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Save &amp; send
-            </button>
+            {/* An invoice already sent or paid keeps its status when corrected:
+                re-sending it is a separate decision, and there is no draft to
+                go back to. Only a draft still offers both. */}
+            {editing && existing?.status !== 'draft' ? (
+              <button
+                type="button"
+                disabled={valid.length === 0 || create.isPending}
+                onClick={() => create.mutate(false)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-teal-50 hover:bg-teal-800 disabled:opacity-40"
+              >
+                {create.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Save changes
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={valid.length === 0 || create.isPending}
+                  onClick={() => create.mutate(false)}
+                  className="rounded-full border border-foreground/15 px-4 py-2 text-sm font-medium hover:bg-foreground/[0.05] disabled:opacity-40"
+                >
+                  {editing ? 'Save changes' : 'Save as draft'}
+                </button>
+                <button
+                  type="button"
+                  disabled={valid.length === 0 || create.isPending}
+                  onClick={() => create.mutate(true)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-teal-50 hover:bg-teal-800 disabled:opacity-40"
+                >
+                  {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Save &amp; send
+                </button>
+              </>
+            )}
           </div>
         </div>
       </Glass>

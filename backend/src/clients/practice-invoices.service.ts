@@ -153,9 +153,9 @@ export class PracticeInvoicesService {
       `UPDATE public.practice_invoices
           SET items = $3::jsonb,
               subtotal_paise = $4, tax_percent = $5, tax_paise = $6, total_paise = $7,
-              notes = COALESCE($8, notes),
+              notes = $8,
               due_at = COALESCE($9::timestamptz, due_at),
-              terms = COALESCE($10, terms)
+              terms = $10
         WHERE id = $1::uuid AND workspace_id = $2::uuid
         RETURNING ${this.COLS}, NULL::text AS client_name,
                   NULL::text AS client_email, NULL::text AS client_phone`,
@@ -166,9 +166,14 @@ export class PracticeInvoicesService {
       totals.tax_percent,
       totals.tax_paise,
       totals.total_paise,
-      input.notes?.trim() ?? null,
+      // Omitted (undefined) keeps what is there; sent-but-empty clears it.
+      // COALESCE could not tell those apart, so clearing a note or the terms
+      // was impossible - delete the text, save, and the old text came back.
+      // That is the same complaint as an invoice that cannot be un-paid, in a
+      // smaller place.
+      keepOrClear(input.notes, current.notes),
       input.due_at ?? null,
-      input.terms?.trim() ?? null,
+      keepOrClear(input.terms, current.terms),
     );
     return toRow(row);
   }
@@ -366,6 +371,18 @@ function toRow(r: RawRow): InvoiceRow {
     created_at: r.created_at.toISOString(),
     updated_at: r.updated_at.toISOString(),
   };
+}
+
+/**
+ * What a PATCH means for an optional free-text column.
+ *
+ * Three cases, and the middle one is the whole point: the field was left out
+ * of the request (keep the stored value), sent as blank (the user cleared the
+ * box - store NULL), or sent with text (store it).
+ */
+function keepOrClear(next: string | undefined, current: string | null): string | null {
+  if (next === undefined) return current;
+  return next.trim() || null;
 }
 
 /** Postgres unique_violation, however the driver wrapped it. */

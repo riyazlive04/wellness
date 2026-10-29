@@ -48,6 +48,42 @@ describe('invoice status corrections', () => {
   });
 });
 
+/**
+ * Editing free text on an invoice.
+ *
+ * `notes` and `terms` were written with COALESCE($n, column), which cannot
+ * tell "the request omitted this field" from "the user emptied the box". Both
+ * arrived as NULL, so both kept the old text: deleting a note and saving put
+ * the note straight back. Mirrors `keepOrClear` in the service.
+ */
+describe('clearing notes and terms', () => {
+  const keepOrClear = (next: string | undefined, current: string | null): string | null => {
+    if (next === undefined) return current;
+    return next.trim() || null;
+  };
+
+  it('keeps the stored text when the field is not part of the request', () => {
+    expect(keepOrClear(undefined, 'Pay by UPI')).toBe('Pay by UPI');
+  });
+
+  it('clears the text when the user empties the box — the bug', () => {
+    expect(keepOrClear('', 'Pay by UPI')).toBeNull();
+  });
+
+  it('treats whitespace as cleared, not as content', () => {
+    // Otherwise the invoice prints a heading over an empty panel.
+    expect(keepOrClear('   \n ', 'Pay by UPI')).toBeNull();
+  });
+
+  it('stores new text, trimmed', () => {
+    expect(keepOrClear('  Net 14 days  ', 'Pay by UPI')).toBe('Net 14 days');
+  });
+
+  it('is a no-op on an invoice that never had any', () => {
+    expect(keepOrClear(undefined, null)).toBeNull();
+  });
+});
+
 describe('invoice money, unchanged by the correction work', () => {
   it('taxes the subtotal once, never per line', () => {
     const lines = normaliseLines([
