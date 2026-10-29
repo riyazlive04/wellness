@@ -35,6 +35,7 @@ export default function MoreLayout() {
       <Stack.Screen name="reminders" options={{ title: 'Reminders' }} />
       <Stack.Screen name="meal-plan" options={{ title: 'Meal plan' }} />
       <Stack.Screen name="measurements" options={{ title: 'Measurements' }} />
+      <Stack.Screen name="blood-sugar" options={{ title: 'Blood sugar' }} />
       <Stack.Screen name="foods" options={{ title: 'Food lookup' }} />
       <Stack.Screen name="barcode" options={{ title: 'Barcode scan' }} />
       <Stack.Screen name="photos" options={{ title: 'Progress photos' }} />

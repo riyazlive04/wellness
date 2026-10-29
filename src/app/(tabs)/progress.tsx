@@ -19,6 +19,8 @@ import { TrendChart } from '@/components/trend-chart';
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type HabitDay } from '@/lib/clients-api';
+import { labsApi } from '@/lib/labs-api';
+import { BAND_COLOR, BAND_LABEL, SUGAR_MARKERS, SUGAR_SHORT, sugarBand, type SugarMarker } from '@/lib/sugar-bands';
 import { radius, spacing, tintFill } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -34,6 +36,9 @@ export default function Progress() {
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const habitsQ = useQuery({ queryKey: ['me', 'habits', 14], queryFn: () => clientsApi.myHabits(14), retry: 1 });
   const achQ = useQuery({ queryKey: ['me', 'achievements'], queryFn: () => clientsApi.myAchievements(), retry: 1 });
+  // Shares the cache key with the blood sugar screen, so arriving there from
+  // this card is instant and saving there updates this card.
+  const labsQ = useQuery({ queryKey: ['me', 'labs'], queryFn: () => labsApi.mine(), retry: 1 });
 
   const logMut = useMutation({
     mutationFn: (body: Partial<HabitDay>) => clientsApi.logHabit(body),
@@ -63,6 +68,29 @@ export default function Progress() {
       : null;
 
   const streak = computeStreak(habits);
+
+  /**
+   * The single most recent sugar reading across all three markers.
+   *
+   * Most recent by date first, then by the marker order fasting → 1st → 2nd,
+   * so when a client logs all three on one morning the card settles on the
+   * last meal of the day rather than flickering between them.
+   */
+  const latestSugar = useMemo((): { code: SugarMarker; value: number; band: ReturnType<typeof sugarBand> } | null => {
+    type Candidate = { code: SugarMarker; value: number; takenOn: string; rank: number };
+    const found: Candidate[] = [];
+    SUGAR_MARKERS.forEach((code, rank) => {
+      const points = labsQ.data?.series.find((s) => s.markerCode === code)?.points ?? [];
+      for (const p of points) {
+        if (p.value == null) continue;
+        found.push({ code, value: p.value, takenOn: p.takenOn, rank });
+      }
+    });
+    if (found.length === 0) return null;
+    found.sort((a, b) => a.takenOn.localeCompare(b.takenOn) || a.rank - b.rank);
+    const best = found[found.length - 1];
+    return { code: best.code, value: best.value, band: sugarBand(best.code, best.value) };
+  }, [labsQ.data]);
 
   // Presentation-only derivations from the same data.
   const days14 = last14(habits);
@@ -175,6 +203,58 @@ export default function Progress() {
           </View>
           <GhostButton label="＋ Log weight" onPress={() => setAsk('weight_kg')} />
         </Card>
+
+        {/* Blood sugar — a shortcut, because this is a daily job.
+            Three taps into the More menu is where a daily habit goes to die,
+            so the latest reading and its band sit on the screen the client
+            already opens to check progress. Hidden entirely for clients who
+            have never logged one, so it is not clutter for the majority who
+            are not monitoring sugar. */}
+        {latestSugar ? (
+          <Pressable onPress={() => router.push('/(tabs)/more/blood-sugar')}>
+            {({ pressed }) => (
+              <Card
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.md,
+                  opacity: pressed ? 0.7 : 1,
+                }}>
+                <View
+                  style={[
+                    styles.achEmoji,
+                    {
+                      backgroundColor: '#E11D48' + (t.dark ? '2E' : '1A'),
+                      borderColor: t.colors.surface,
+                    },
+                  ]}>
+                  <Ionicons name="water" size={17} color="#E11D48" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <AppText variant="body">
+                    {`${SUGAR_SHORT[latestSugar.code]} · ${latestSugar.value} mg/dL`}
+                  </AppText>
+                  <AppText variant="caption" tone="muted">
+                    {BAND_LABEL[latestSugar.band]}
+                  </AppText>
+                </View>
+                <View
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: BAND_COLOR[latestSugar.band] + (t.dark ? '2E' : '1A'),
+                      borderColor: BAND_COLOR[latestSugar.band] + '55',
+                    },
+                  ]}>
+                  <AppText variant="caption" style={{ color: BAND_COLOR[latestSugar.band] }}>
+                    Log today
+                  </AppText>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={t.colors.textFaint} />
+              </Card>
+            )}
+          </Pressable>
+        ) : null}
 
         {/* Two-up stats — adherence + streak */}
         <View style={styles.grid}>
