@@ -23,6 +23,8 @@ export interface PublicProfileView {
   slug: string;
   name: string;
   logo_url: string | null;
+  /** Practitioner photo. Null falls back to the logo on the page. */
+  photo_url: string | null;
   brand_color: string | null;
   brand_accent: string | null;
   tagline: string | null;
@@ -38,6 +40,7 @@ export interface OwnerPublicProfileView {
   enabled: boolean;
   headline: string | null;
   bio: string | null;
+  photo_url: string | null;
   show_join_cta: boolean;
   slug: string | null;
   public_url: string | null;
@@ -86,10 +89,11 @@ export class PublicProfileService {
         enabled: boolean;
         headline: string | null;
         bio: string | null;
+        photo_url: string | null;
         show_join_cta: boolean;
       }>
     >(
-      `SELECT enabled, headline, bio, show_join_cta
+      `SELECT enabled, headline, bio, photo_url, show_join_cta
          FROM public.workspace_public_profiles
         WHERE workspace_id = $1::uuid`,
       workspaceId,
@@ -116,6 +120,7 @@ export class PublicProfileService {
       enabled: profile?.enabled ?? false,
       headline: profile?.headline ?? null,
       bio: profile?.bio ?? null,
+      photo_url: profile?.photo_url ?? null,
       show_join_cta: profile?.show_join_cta ?? true,
       slug: ws.slug,
       public_url: this.publicUrl(ws.slug),
@@ -151,6 +156,7 @@ export class PublicProfileService {
               headline      = CASE WHEN $3::boolean THEN $4 ELSE headline END,
               bio           = CASE WHEN $5::boolean THEN $6 ELSE bio END,
               show_join_cta = COALESCE($7, show_join_cta),
+              photo_url     = CASE WHEN $8::boolean THEN $9 ELSE photo_url END,
               updated_at    = now()
         WHERE workspace_id = $1::uuid`,
       workspaceId,
@@ -160,6 +166,10 @@ export class PublicProfileService {
       dto.bio !== undefined,
       dto.bio === undefined ? null : dto.bio,
       dto.show_join_cta ?? null,
+      // Same three-case handling as headline and bio: key absent leaves the
+      // photo alone, an empty string removes it, a URL replaces it.
+      dto.photo_url !== undefined,
+      dto.photo_url === undefined ? null : (dto.photo_url?.trim() || null),
     );
 
     return this.getOwnerProfile(workspaceId);
@@ -231,12 +241,13 @@ export class PublicProfileService {
         tagline: string | null;
         headline: string | null;
         bio: string | null;
+        photo_url: string | null;
         show_join_cta: boolean;
       }>
     >(
       `SELECT w.id AS workspace_id, w.slug, w.name, w.display_name, w.logo_url,
               w.brand_color, w.brand_accent, w.tagline,
-              p.headline, p.bio, p.show_join_cta
+              p.headline, p.bio, p.photo_url, p.show_join_cta
          FROM public.workspaces w
          JOIN public.workspace_public_profiles p ON p.workspace_id = w.id
         WHERE lower(w.slug) = $1
@@ -275,6 +286,7 @@ export class PublicProfileService {
       slug: row.slug,
       name: row.display_name?.trim() || row.name,
       logo_url: row.logo_url,
+      photo_url: row.photo_url,
       brand_color: row.brand_color,
       brand_accent: row.brand_accent,
       tagline: row.tagline,

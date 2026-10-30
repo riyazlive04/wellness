@@ -15,6 +15,8 @@ export interface PublicProfileView {
   slug: string;
   name: string;
   logo_url: string | null;
+  /** Practitioner photo. Null falls back to the logo on the page. */
+  photo_url: string | null;
   brand_color: string | null;
   brand_accent: string | null;
   tagline: string | null;
@@ -30,6 +32,7 @@ export interface OwnerPublicProfile {
   enabled: boolean;
   headline: string | null;
   bio: string | null;
+  photo_url: string | null;
   show_join_cta: boolean;
   slug: string | null;
   public_url: string | null;

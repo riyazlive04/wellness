@@ -13,6 +13,13 @@ export class PatchPublicProfileDto {
 
   @IsOptional() @IsBoolean()
   show_join_cta?: boolean;
+
+  /**
+   * Practitioner photo URL. An empty string removes it, which is why this is
+   * not @IsUrl: that would reject the clear.
+   */
+  @IsOptional() @IsString() @MaxLength(2000)
+  photo_url?: string | null;
 }
 
 export class ProfileLinkDto {

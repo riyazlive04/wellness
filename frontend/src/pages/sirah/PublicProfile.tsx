@@ -57,8 +57,20 @@ function splitLinks(links: PublicProfileLink[]) {
 }
 
 /**
- * Public nutritionist link-in-bio — calm dark canvas, soft brand atmosphere,
- * left-aligned identity (SuperProfile-inspired without loud stripes).
+ * Public nutritionist link-in-bio — split portrait.
+ *
+ * Half the page is the practitioner's face, because this page's only job is
+ * persuading a stranger who arrived from an Instagram bio to book, and people
+ * book a person rather than a logo. The previous version centred a logo and a
+ * single button on an empty canvas and showed none of the headline, bio or
+ * links it already stored.
+ *
+ * The photo panel degrades in three steps: the uploaded photo, else the
+ * practice logo on a brand gradient, else the practice initial. A practice
+ * that uploads nothing still gets a page that looks deliberate.
+ *
+ * On a phone the two halves stack, photo first, so the face is still what a
+ * visitor sees before anything else.
  */
 export default function PublicProfile() {
   const { slug = '' } = useParams<{ slug: string }>();
@@ -129,75 +141,95 @@ export default function PublicProfile() {
   const subtitle = profile.headline || profile.tagline;
 
   return (
-    <div className="relative min-h-screen overflow-hidden text-white">
-      {/* Quiet dark base + soft brand washes (no loud stripes) */}
-      <div className="absolute inset-0 bg-[#0c0d0c]" />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.18]"
-        style={{
-          backgroundImage: `repeating-linear-gradient(
-            -28deg,
-            transparent 0,
-            transparent 56px,
-            ${primary} 56px,
-            ${primary} 57px
-          )`,
-        }}
-      />
-      <div
-        className="pointer-events-none absolute -left-24 top-0 h-[70vh] w-[70vw] rounded-full blur-3xl"
-        style={{ background: `${primary}33` }}
-      />
-      <div
-        className="pointer-events-none absolute -right-16 bottom-0 h-[55vh] w-[55vw] rounded-full blur-3xl"
-        style={{ background: `${accent}28` }}
-      />
-
+    <div className="relative min-h-screen bg-[#0c0d0c] text-white lg:flex">
       <button
         type="button"
         onClick={() => void sharePage()}
         aria-label="Share profile"
-        className="absolute right-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.06] text-white/80 backdrop-blur-md transition hover:bg-white/[0.12] hover:text-white md:right-7 md:top-7"
+        className="absolute right-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-black/25 text-white/85 backdrop-blur-md transition hover:bg-black/40 hover:text-white md:right-6 md:top-6"
       >
         {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
       </button>
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-16 sm:max-w-lg sm:px-8">
+      {/* ── Portrait half ─────────────────────────────────────────────
+          Fixed on desktop so the face stays put while the right side
+          scrolls; a plain block on a phone, where it leads instead. */}
+      <div className="relative h-[42vh] min-h-[280px] w-full overflow-hidden lg:h-screen lg:w-[44%] lg:flex-shrink-0">
+        <div
+          className="absolute inset-0"
+          style={{ background: `linear-gradient(165deg, ${primary}, ${primary}22 85%, #0c0d0c)` }}
+        />
+        {profile.photo_url ? (
+          <img
+            src={profile.photo_url}
+            alt={profile.name}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : profile.logo_url ? (
+          <div className="absolute inset-0 grid place-items-center">
+            <img
+              src={profile.logo_url}
+              alt=""
+              className="h-32 w-32 rounded-full object-cover shadow-[0_12px_40px_rgba(0,0,0,0.45)] ring-2 ring-white/20 md:h-40 md:w-40"
+            />
+          </div>
+        ) : (
+          <div className="absolute inset-0 grid place-items-center">
+            <span className="font-serif text-[22vw] leading-none text-white/25 lg:text-[9rem]">
+              {profile.name.slice(0, 1).toUpperCase()}
+            </span>
+          </div>
+        )}
+        {/* Fades the photo into the content half rather than cutting it. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-[#0c0d0c] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-full lg:w-28 lg:bg-gradient-to-r" />
+      </div>
+
+      {/* ── Content half ─────────────────────────────────────────── */}
+      <div className="relative flex w-full flex-col justify-center px-6 py-10 sm:px-10 lg:min-h-screen lg:px-14 lg:py-16">
+        <div
+          className="pointer-events-none absolute -right-24 top-1/4 h-[45vh] w-[45vh] rounded-full blur-3xl"
+          style={{ background: `${accent}1F` }}
+        />
+
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-col items-start"
+          className="relative w-full max-w-lg"
         >
-          <div className="h-24 w-24 overflow-hidden rounded-full bg-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.45)] ring-2 ring-white/15 md:h-28 md:w-28">
-            {profile.logo_url ? (
-              <img src={profile.logo_url} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <div
-                className="grid h-full w-full place-items-center font-serif text-3xl"
-                style={{ background: `${primary}44`, color: '#fff' }}
-              >
-                {profile.name.slice(0, 1).toUpperCase()}
-              </div>
-            )}
-          </div>
+          {profile.verified && (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium"
+              style={{ borderColor: `${primary}66`, color: primary }}
+            >
+              <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
+              Verified practice
+            </span>
+          )}
 
-          <h1 className="mt-6 flex items-center gap-2 font-serif text-[2.35rem] leading-[1.05] tracking-tight md:text-5xl">
+          <h1 className="mt-4 font-serif text-[2.6rem] leading-[1.03] tracking-tight md:text-6xl">
             {profile.name}
-            {profile.verified && (
-              <BadgeCheck className="h-6 w-6 shrink-0 text-sky-300" aria-label="Verified" />
-            )}
           </h1>
 
           {subtitle && (
-            <p className="mt-3 max-w-sm text-[15px] leading-snug text-white/72">{subtitle}</p>
+            <p className="mt-4 text-base leading-snug text-white/75 md:text-lg">{subtitle}</p>
           )}
           {profile.bio && (
-            <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/50">{profile.bio}</p>
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-white/55">{profile.bio}</p>
+          )}
+
+          {profile.show_join_cta && profile.join_url && (
+            <a
+              href={profile.join_url}
+              className="mt-8 inline-flex items-center justify-center rounded-full px-8 py-3.5 text-sm font-semibold text-[#0c0d0c] transition hover:brightness-110"
+              style={{ background: primary, boxShadow: `0 10px 28px ${primary}55` }}
+            >
+              Join my practice
+            </a>
           )}
 
           {social.length > 0 && (
-            <div className="mt-6 flex flex-wrap items-center gap-2.5">
+            <div className="mt-7 flex flex-wrap items-center gap-2.5">
               {social.map((link) => {
                 const Icon = ICON_MAP[link.resolvedIcon] ?? Link2;
                 const brand = isSocial(link.resolvedIcon)
@@ -224,56 +256,40 @@ export default function PublicProfile() {
               })}
             </div>
           )}
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-9 flex w-full flex-col gap-2.5"
-        >
-          {profile.show_join_cta && profile.join_url && (
-            <a
-              href={profile.join_url}
-              className="inline-flex w-full items-center justify-center rounded-full px-5 py-3.5 text-sm font-semibold text-[#0c0d0c] transition hover:brightness-110"
-              style={{
-                background: primary,
-                boxShadow: `0 10px 28px ${primary}55`,
-              }}
-            >
-              Join my practice
-            </a>
+          {rest.length > 0 && (
+            <div className="mt-6 flex w-full flex-col gap-2.5">
+              {rest.map((link, i) => {
+                const Icon = ICON_MAP[link.resolvedIcon] ?? Link2;
+                return (
+                  <motion.a
+                    key={link.id ?? `${link.label}-${i}`}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.12 + i * 0.04 }}
+                    className={cn(
+                      'group flex w-full items-center gap-3 rounded-2xl bg-white/[0.06] px-4 py-3.5 ring-1 ring-white/10 transition',
+                      'hover:bg-white/[0.1] hover:ring-white/20',
+                    )}
+                  >
+                    <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-white/10 text-white/90">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="flex-1 text-left text-sm font-medium text-white/90">{link.label}</span>
+                    <ExternalLink className="h-3.5 w-3.5 text-white/30 transition group-hover:text-white/60" />
+                  </motion.a>
+                );
+              })}
+            </div>
           )}
 
-          {rest.map((link, i) => {
-            const Icon = ICON_MAP[link.resolvedIcon] ?? Link2;
-            return (
-              <motion.a
-                key={link.id ?? `${link.label}-${i}`}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.12 + i * 0.04 }}
-                className={cn(
-                  'group flex w-full items-center gap-3 rounded-2xl bg-white/[0.06] px-4 py-3.5 ring-1 ring-white/10 transition',
-                  'hover:bg-white/[0.1] hover:ring-white/20',
-                )}
-              >
-                <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-white/10 text-white/90">
-                  <Icon className="h-4 w-4" />
-                </span>
-                <span className="flex-1 text-left text-sm font-medium text-white/90">{link.label}</span>
-                <ExternalLink className="h-3.5 w-3.5 text-white/30 transition group-hover:text-white/60" />
-              </motion.a>
-            );
-          })}
+          <p className="mt-12 text-[10px] uppercase tracking-[0.2em] text-white/25">
+            Powered by NUSI
+          </p>
         </motion.div>
-
-        <p className="mt-12 text-[10px] uppercase tracking-[0.2em] text-white/25">
-          Powered by NUSI
-        </p>
       </div>
     </div>
   );

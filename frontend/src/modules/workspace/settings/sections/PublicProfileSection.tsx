@@ -59,6 +59,7 @@ export function PublicProfileSection() {
   const [enabled, setEnabled] = useState(false);
   const [headline, setHeadline] = useState('');
   const [bio, setBio] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
   const [showJoin, setShowJoin] = useState(true);
   const [links, setLinks] = useState<DraftLink[]>([]);
   const seeded = useRef(false);
@@ -69,6 +70,7 @@ export function PublicProfileSection() {
     setEnabled(profileQ.data.enabled);
     setHeadline(profileQ.data.headline ?? '');
     setBio(profileQ.data.bio ?? '');
+    setPhotoUrl(profileQ.data.photo_url ?? '');
     setShowJoin(profileQ.data.show_join_cta);
     setLinks(toDraft(profileQ.data.links));
     setSlug(profileQ.data.slug ?? ws?.slug ?? '');
@@ -95,6 +97,7 @@ export function PublicProfileSection() {
         enabled,
         headline: headline.trim() || null,
         bio: bio.trim() || null,
+        photo_url: photoUrl.trim(),
         show_join_cta: showJoin,
       });
       await publicProfileApi.replaceLinks(
@@ -234,6 +237,33 @@ export function PublicProfileSection() {
             placeholder="A short intro for prospects landing from your Instagram bio."
             className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2.5 text-sm outline-none focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04]"
           />
+        </Field>
+
+        {/* Half the public page is this photo. A practice that skips it still
+            gets a deliberate page - the logo, then the initial - but a face is
+            what persuades a stranger to book. */}
+        <Field label="Your photo (optional)">
+          <div className="flex items-center gap-3">
+            <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-foreground/[0.06] ring-1 ring-foreground/10">
+              {photoUrl.trim() ? (
+                <img src={photoUrl.trim()} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="grid h-full w-full place-items-center text-[10px] text-foreground/40">
+                  None
+                </div>
+              )}
+            </div>
+            <input
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              maxLength={2000}
+              placeholder="https://… link to a photo of you"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2.5 text-sm outline-none focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04]"
+            />
+          </div>
+          <p className="mt-1.5 text-xs text-foreground/55">
+            Shown large on your public page. Leave blank to use your practice logo instead.
+          </p>
         </Field>
       </div>
 
