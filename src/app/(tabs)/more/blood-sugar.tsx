@@ -21,14 +21,16 @@ import {
   ActivityIndicator, Pressable, RefreshControl, StyleSheet, TextInput, View,
 } from 'react-native';
 
-import { SugarChart, type SugarPoint } from '@/components/sugar-chart';
+import { SugarChart, SugarWeekChart, type SugarPoint } from '@/components/sugar-chart';
 import { AppText, Card, Eyebrow, GradientButton, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api';
 import { labsApi } from '@/lib/labs-api';
 import {
-  BAND_COLOR, BAND_LABEL, SUGAR_LABEL, SUGAR_MARKERS, SUGAR_REFERENCE_NOTE, SUGAR_SHORT,
-  sugarBand,
+  BAND_COLOR, BAND_LABEL, SPIKE_NOTE, SUGAR_LABEL, SUGAR_MARKERS, SUGAR_REFERENCE_NOTE,
+  SUGAR_SHORT, TREND_COLOR, TREND_LABEL, annotateSugarTrend, sugarBand, sugarTrendReason,
+  sugarWeek, sugarWeekStarts, weekRangeLabel, weekStart,
+  type SugarMarker, type SugarTrendPoint, type SugarWeekDay,
 } from '@/lib/sugar-bands';
 import { radius, spacing } from '@/lib/theme';
 
@@ -59,6 +61,14 @@ export default function BloodSugar() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // 'week' is the default: a consultation talks in weeks, and the brief asks
+  // for Day 1..Day 7. 'all' keeps the long continuous trend, which answers a
+  // question a single week cannot ("am I better than three months ago?").
+  const [period, setPeriod] = useState<'week' | 'all'>('week');
+  // An offset from the newest week with data: 0 is the latest, -1 the one
+  // before. Stored as an offset rather than a date so it survives new readings
+  // arriving while the screen is open.
+  const [weekBack, setWeekBack] = useState(0);
 
   const historyQ = useQuery({
     queryKey: ['me', 'labs'],
@@ -92,17 +102,48 @@ export default function BloodSugar() {
   // One chart per marker, oldest reading first, self-logged and lab rows alike:
   // a client who had a fasting sugar drawn at a lab should see it on the same
   // line as their home readings, not on a separate chart.
-  const seriesByMarker = useMemo(() => {
-    const out: Record<string, SugarPoint[]> = {};
+  //
+  // Annotated with the spike rule over the FULL history, even when only one
+  // week is on screen, so a Monday's flag is judged against the previous week
+  // instead of losing its baseline at the week boundary.
+  const trendByMarker = useMemo(() => {
+    const out = {} as Record<SugarMarker, SugarTrendPoint[]>;
     for (const code of SUGAR_MARKERS) {
       const s = historyQ.data?.series.find((x) => x.markerCode === code);
-      out[code] = (s?.points ?? [])
-        .filter((p) => p.value != null)
-        .map((p) => ({ takenOn: p.takenOn, value: p.value as number }))
-        .sort((a, b) => a.takenOn.localeCompare(b.takenOn));
+      out[code] = annotateSugarTrend(
+        (s?.points ?? [])
+          .filter((p) => p.value != null)
+          .map((p) => ({ takenOn: p.takenOn, value: p.value as number })),
+      );
     }
     return out;
   }, [historyQ.data]);
+
+  /** The all-readings line, with each dot's flag carried along. */
+  const seriesByMarker = useMemo(() => {
+    const out = {} as Record<SugarMarker, SugarPoint[]>;
+    for (const code of SUGAR_MARKERS) {
+      out[code] = trendByMarker[code].map(
+        (p): SugarPoint => ({ takenOn: p.takenOn, value: p.value, flag: p.flag }),
+      );
+    }
+    return out;
+  }, [trendByMarker]);
+
+  /** Weeks with at least one reading of any marker, oldest first. */
+  const weeks = useMemo(() => {
+    const set = new Set<string>();
+    for (const code of SUGAR_MARKERS) {
+      for (const w of sugarWeekStarts(trendByMarker[code])) set.add(w);
+    }
+    return [...set].sort();
+  }, [trendByMarker]);
+
+  // Clamped rather than validated: readings arriving can change how many weeks
+  // exist, and an offset past the end should land on the oldest week, not on
+  // an empty chart.
+  const weekIdx = Math.max(0, weeks.length - 1 + weekBack);
+  const start = weeks[Math.min(weekIdx, Math.max(0, weeks.length - 1))];
 
   const anyData = SUGAR_MARKERS.some((c) => seriesByMarker[c].length > 0);
 
@@ -250,6 +291,82 @@ export default function BloodSugar() {
           <AppText variant="title">Daily blood sugar</AppText>
         </View>
 
+        {anyData ? (
+          <View style={{ gap: spacing.sm }}>
+            {/* Week vs the whole history. Both are kept: the week is how a
+                consultation talks, the full line is how progress reads. */}
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              {([['week', 'This week'], ['all', 'All readings']] as const).map(([key, label]) => {
+                const active = period === key;
+                return (
+                  <Pressable
+                    key={key}
+                    onPress={() => setPeriod(key)}
+                    style={[
+                      styles.dateChip,
+                      {
+                        backgroundColor: active
+                          ? t.colors.accent + (t.dark ? '2E' : '1A')
+                          : t.colors.surfaceStrong,
+                        borderColor: active ? t.colors.accent + '55' : t.colors.border,
+                      },
+                    ]}>
+                    <AppText variant="caption" tone={active ? 'accent' : 'muted'}>
+                      {label}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {period === 'week' && start ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: spacing.sm,
+                }}>
+                <Pressable
+                  onPress={() => setWeekBack(weekBack - 1)}
+                  disabled={weekIdx <= 0}
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous week"
+                  style={[
+                    styles.weekArrow,
+                    { borderColor: t.colors.border, opacity: weekIdx <= 0 ? 0.3 : 1 },
+                  ]}>
+                  <Ionicons name="chevron-back" size={15} color={t.colors.textMuted} />
+                </Pressable>
+                <View style={{ alignItems: 'center' }}>
+                  <AppText variant="caption" tone="muted">
+                    {weekRangeLabel(start)}
+                  </AppText>
+                  {start === weekStart(todayISO()) ? (
+                    <AppText variant="caption" tone="faint">
+                      this week
+                    </AppText>
+                  ) : null}
+                </View>
+                <Pressable
+                  onPress={() => setWeekBack(Math.min(0, weekBack + 1))}
+                  disabled={weekIdx >= weeks.length - 1}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next week"
+                  style={[
+                    styles.weekArrow,
+                    {
+                      borderColor: t.colors.border,
+                      opacity: weekIdx >= weeks.length - 1 ? 0.3 : 1,
+                    },
+                  ]}>
+                  <Ionicons name="chevron-forward" size={15} color={t.colors.textMuted} />
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
         {!anyData ? (
           <Card>
             <AppText variant="muted" tone="muted">
@@ -260,6 +377,7 @@ export default function BloodSugar() {
           SUGAR_MARKERS.map((code) => {
             const pts = seriesByMarker[code];
             if (pts.length === 0) return null;
+            const week = period === 'week' && start ? sugarWeek(trendByMarker[code], start) : null;
             const last = pts[pts.length - 1];
             const band = sugarBand(code, last.value);
             return (
@@ -300,7 +418,27 @@ export default function BloodSugar() {
                   </View>
                 </View>
 
-                <SugarChart marker={code} points={pts} />
+                {week ? (
+                  <SugarWeekChart marker={code} week={week} />
+                ) : (
+                  <SugarChart marker={code} points={pts} />
+                )}
+
+                {/* Which days of the week nobody logged, named. The chart's
+                    hollow tick says it visually; the words are what make it
+                    read as absence rather than as a rendering accident. */}
+                {week ? <NotLogged week={week} /> : null}
+
+                {/* Every flagged reading in words. The red ring is never the
+                    only cue - this is the same information for a red-green
+                    colourblind reader, and it is where the WHY lives. */}
+                <TrendNotes
+                  days={(week ?? trendByMarker[code].map(
+                    (p): SugarWeekDay => ({
+                      day: 0, takenOn: p.takenOn, weekday: '', value: p.value, trend: p,
+                    }),
+                  )).filter((d) => d.trend?.flag)}
+                />
               </Card>
             );
           })
@@ -312,6 +450,12 @@ export default function BloodSugar() {
             <Ionicons name="information-circle-outline" size={15} color={t.colors.textFaint} />
             <AppText variant="caption" tone="faint" style={{ flex: 1, lineHeight: 17 }}>
               {SUGAR_REFERENCE_NOTE}
+            </AppText>
+          </View>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Ionicons name="trending-up-outline" size={15} color={TREND_COLOR.spike} />
+            <AppText variant="caption" tone="faint" style={{ flex: 1, lineHeight: 17 }}>
+              {SPIKE_NOTE}
             </AppText>
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
@@ -332,7 +476,70 @@ export default function BloodSugar() {
   );
 }
 
+/** 'Not logged: Wed, Sat' - absence stated, never drawn as a zero. */
+function NotLogged({ week }: { week: SugarWeekDay[] }) {
+  const missing = week.filter((d) => d.value == null);
+  if (missing.length === 0) return null;
+  return (
+    <AppText variant="caption" tone="faint">
+      {missing.length === 7
+        ? 'No readings logged this week.'
+        : `Not logged: ${missing.map((d) => `${d.weekday} (Day ${d.day})`).join(', ')}`}
+    </AppText>
+  );
+}
+
+/**
+ * The reasons behind the rings, as sentences.
+ *
+ * Deliberately the arithmetic and not a verdict: '+14 vs your 7-day average of
+ * 91' can be checked against the numbers on the chart, where 'high spike'
+ * cannot. A spike pill is red, a dip pill is blue - a fall is never dressed as
+ * an alarm (see the note in sugar-bands.ts).
+ */
+function TrendNotes({ days }: { days: SugarWeekDay[] }) {
+  const t = useTheme();
+  if (days.length === 0) return null;
+  return (
+    <View style={{ gap: 5 }}>
+      {days.slice(-4).map((d) => {
+        const flag = d.trend?.flag;
+        if (!flag || !d.trend) return null;
+        return (
+          <View
+            key={`${d.takenOn}-${flag}`}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View
+              style={[
+                styles.bandPill,
+                {
+                  backgroundColor: TREND_COLOR[flag] + (t.dark ? '2E' : '1A'),
+                  borderColor: TREND_COLOR[flag] + '55',
+                },
+              ]}>
+              <AppText variant="caption" style={{ color: TREND_COLOR[flag] }}>
+                {TREND_LABEL[flag]}
+              </AppText>
+            </View>
+            <AppText variant="caption" tone="faint" style={{ flex: 1 }}>
+              {`${prettyDate(d.takenOn)} · ${sugarTrendReason(d.trend) ?? ''}`}
+            </AppText>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  weekArrow: {
+    width: 30,
+    height: 30,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   icon: {
     width: 30,
     height: 30,
