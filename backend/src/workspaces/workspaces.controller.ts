@@ -119,6 +119,14 @@ export class WorkspacesController {
           null,
         pdf_footer_note: ws.pdf_footer_note,
         invoice_terms: ws.invoice_terms,
+        // Bank details for the invoice's "how to pay" block. Sent as typed;
+        // the renderer decides whether there is enough here to print a block.
+        bank_account_name: ws.bank_account_name,
+        bank_account_number: ws.bank_account_number,
+        bank_name: ws.bank_name,
+        bank_branch: ws.bank_branch,
+        bank_ifsc: ws.bank_ifsc,
+        bank_upi_id: ws.bank_upi_id,
         // Render-side enforcement: only report white-label if the plan still
         // allows it OR the white_label add-on is active, so a downgrade
         // auto-restores NUSI branding but a paying add-on customer keeps

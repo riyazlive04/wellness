@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Lock, BadgeCheck, FileText, Loader2, Pipette } from 'lucide-react';
+import { Check, Lock, BadgeCheck, FileText, Landmark, Loader2, Pipette } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -27,6 +27,15 @@ export function BrandingSection() {
   const [pdfContact, setPdfContact] = useState('');
   const [pdfFooter, setPdfFooter] = useState('');
   const [invoiceTerms, setInvoiceTerms] = useState('');
+
+  // Bank details, printed on the invoices the practice issues. Same lifecycle
+  // as the PDF fields above: hydrated once, saved with the section.
+  const [bankAccountName, setBankAccountName] = useState('');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [bankBranch, setBankBranch] = useState('');
+  const [bankIfsc, setBankIfsc] = useState('');
+  const [bankUpiId, setBankUpiId] = useState('');
 
   // Plan + current white-label flag drive the real, gated toggle.
   const wsQ = useQuery({ queryKey: ['workspace', 'me'], queryFn: () => workspacesApi.me() });
@@ -56,6 +65,12 @@ export function BrandingSection() {
     setPdfContact(wsQ.data.pdf_contact_line ?? '');
     setPdfFooter(wsQ.data.pdf_footer_note ?? '');
     setInvoiceTerms(wsQ.data.invoice_terms ?? '');
+    setBankAccountName(wsQ.data.bank_account_name ?? '');
+    setBankAccountNumber(wsQ.data.bank_account_number ?? '');
+    setBankName(wsQ.data.bank_name ?? '');
+    setBankBranch(wsQ.data.bank_branch ?? '');
+    setBankIfsc(wsQ.data.bank_ifsc ?? '');
+    setBankUpiId(wsQ.data.bank_upi_id ?? '');
   }, [wsQ.data]);
 
   const palette =
@@ -70,6 +85,13 @@ export function BrandingSection() {
       palette: { id: palette.id, primary: palette.primary, accent: palette.accent },
       tagline: tagline.trim(),
     });
+    // An IFSC the bank will reject is worth catching here rather than letting
+    // the server 400 the whole section, which would also lose the colours.
+    const ifsc = bankIfsc.trim();
+    if (ifsc && !/^[A-Za-z]{4}0[A-Za-z0-9]{6}$/.test(ifsc)) {
+      toast.error('That IFSC does not look right - 11 characters, like HDFC0001234.');
+      return;
+    }
     // PDF fields aren't part of the portal-theme cache, so persist them directly.
     setSavingPdf(true);
     try {
@@ -77,6 +99,14 @@ export function BrandingSection() {
         pdf_contact_line: pdfContact.trim(),
         pdf_footer_note: pdfFooter.trim(),
         invoice_terms: invoiceTerms.trim(),
+        // Sent even when blank: '' clears the stored value, which is how an
+        // owner removes an account they no longer use.
+        bank_account_name: bankAccountName.trim(),
+        bank_account_number: bankAccountNumber.trim(),
+        bank_name: bankName.trim(),
+        bank_branch: bankBranch.trim(),
+        bank_ifsc: ifsc,
+        bank_upi_id: bankUpiId.trim(),
       });
       qc.invalidateQueries({ queryKey: ['workspace', 'branding'] });
       qc.invalidateQueries({ queryKey: ['workspace', 'me'] });
@@ -266,6 +296,102 @@ export function BrandingSection() {
             <div className="mt-1 text-[11px] text-foreground/60 dark:text-foreground/50">
               Copied onto each new invoice. Changing it here leaves invoices you
               have already sent exactly as they were.
+            </div>
+          </label>
+        </div>
+      </div>
+
+      {/* Bank details — how a client actually pays the invoice */}
+      <div className="rounded-3xl border border-foreground/[0.06] bg-card p-6 shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-xl bg-[hsl(var(--brand-blue))]/10 text-[hsl(var(--brand-blue))]">
+            <Landmark className="h-3.5 w-3.5" />
+          </span>
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Bank details</div>
+        </div>
+        <p className="mt-1.5 text-[11px] text-foreground/70 dark:text-foreground/55">
+          Printed in the “How to pay” box on every invoice you issue, so clients do not have
+          to ask. Fill in only what you want shown — leave them all blank and the box stays
+          as it is today.
+        </p>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="block">
+            <div className="text-[11px] font-semibold text-foreground/75 dark:text-foreground/60">Account name</div>
+            <input
+              value={bankAccountName}
+              onChange={(e) => setBankAccountName(e.target.value)}
+              placeholder="Name the account is held in"
+              maxLength={160}
+              className="mt-1.5 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04] focus:outline-none"
+            />
+          </label>
+
+          <label className="block">
+            <div className="text-[11px] font-semibold text-foreground/75 dark:text-foreground/60">Account number</div>
+            <input
+              value={bankAccountNumber}
+              onChange={(e) => setBankAccountNumber(e.target.value)}
+              placeholder="e.g. 50100123456789"
+              maxLength={32}
+              inputMode="numeric"
+              className="mt-1.5 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04] focus:outline-none"
+            />
+            <div className="mt-1 text-[11px] text-foreground/60 dark:text-foreground/50">
+              Saved exactly as you type it.
+            </div>
+          </label>
+
+          <label className="block">
+            <div className="text-[11px] font-semibold text-foreground/75 dark:text-foreground/60">Bank</div>
+            <input
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              placeholder="e.g. HDFC Bank"
+              maxLength={120}
+              className="mt-1.5 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04] focus:outline-none"
+            />
+          </label>
+
+          <label className="block">
+            <div className="text-[11px] font-semibold text-foreground/75 dark:text-foreground/60">Branch</div>
+            <input
+              value={bankBranch}
+              onChange={(e) => setBankBranch(e.target.value)}
+              placeholder="e.g. Koramangala, Bengaluru"
+              maxLength={160}
+              className="mt-1.5 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04] focus:outline-none"
+            />
+          </label>
+
+          <label className="block">
+            <div className="text-[11px] font-semibold text-foreground/75 dark:text-foreground/60">IFSC</div>
+            <input
+              value={bankIfsc}
+              onChange={(e) => setBankIfsc(e.target.value)}
+              placeholder="e.g. HDFC0001234"
+              maxLength={11}
+              autoCapitalize="characters"
+              spellCheck={false}
+              className="mt-1.5 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04] focus:outline-none"
+            />
+            <div className="mt-1 text-[11px] text-foreground/60 dark:text-foreground/50">
+              11 characters: four letters, a zero, then six more.
+            </div>
+          </label>
+
+          <label className="block">
+            <div className="text-[11px] font-semibold text-foreground/75 dark:text-foreground/60">UPI ID</div>
+            <input
+              value={bankUpiId}
+              onChange={(e) => setBankUpiId(e.target.value)}
+              placeholder="e.g. practice@okhdfcbank"
+              maxLength={120}
+              spellCheck={false}
+              className="mt-1.5 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04] focus:outline-none"
+            />
+            <div className="mt-1 text-[11px] text-foreground/60 dark:text-foreground/50">
+              Usually the fastest way a client settles an invoice.
             </div>
           </label>
         </div>

@@ -1765,6 +1765,18 @@ model workspaces {
   pdf_footer_note           String?
   /// The practice's default invoice terms, copied onto each new invoice.
   invoice_terms             String?
+  /// Name the account is held in - the beneficiary a client types when transferring.
+  bank_account_name         String?
+  /// Stored exactly as entered. Indian account numbers vary by bank (9-18 digits), so no format is imposed.
+  bank_account_number       String?
+  /// Bank, e.g. "HDFC Bank".
+  bank_name                 String?
+  /// Branch, e.g. "Koramangala, Bengaluru".
+  bank_branch               String?
+  /// IFSC, shape-validated only (AAAA0XXXXXX); never reformatted.
+  bank_ifsc                 String?
+  /// UPI VPA, e.g. "practice@okhdfcbank" - usually the fastest way a client pays.
+  bank_upi_id               String?
   created_at                DateTime                    @default(now()) @db.Timestamptz(6)
   updated_at                DateTime                    @default(now()) @db.Timestamptz(6)
   organization_id           String?                     @db.Uuid

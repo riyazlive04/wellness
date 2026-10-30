@@ -40,9 +40,29 @@ export interface WorkspaceSummary {
   pdf_contact_line: string | null;
   pdf_footer_note: string | null;
   invoice_terms: string | null;
+  bank_account_name: string | null;
+  bank_account_number: string | null;
+  bank_name: string | null;
+  bank_branch: string | null;
+  bank_ifsc: string | null;
+  bank_upi_id: string | null;
   created_at: Date;
   updated_at: Date;
 }
+
+/**
+ * Free-text columns where a blank value means "the owner emptied the box",
+ * not "leave it alone". Sending '' for one of these stores NULL, so the
+ * invoice stops printing it; omitting the key keeps what is stored.
+ */
+const CLEARABLE_FIELDS = [
+  'bank_account_name',
+  'bank_account_number',
+  'bank_name',
+  'bank_branch',
+  'bank_ifsc',
+  'bank_upi_id',
+] as const satisfies readonly (keyof UpdateWorkspaceDto)[];
 
 @Injectable()
 export class WorkspacesService {
@@ -200,7 +220,15 @@ export class WorkspacesService {
   ): Promise<WorkspaceSummary> {
     const data: Record<string, unknown> = {};
     for (const k of Object.keys(dto) as (keyof UpdateWorkspaceDto)[]) {
-      if (dto[k] !== undefined) data[k] = dto[k];
+      if (dto[k] === undefined) continue;
+      // Three cases for a clearable field, and the middle one is the point:
+      // key absent (skipped above), sent blank (store NULL), sent with text
+      // (store it, trimmed - the value itself is never reformatted).
+      if ((CLEARABLE_FIELDS as readonly string[]).includes(k)) {
+        data[k] = String(dto[k]).trim() || null;
+        continue;
+      }
+      data[k] = dto[k];
     }
     if (Object.keys(data).length === 0) {
       throw new BadRequestException('No fields to update.');

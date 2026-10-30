@@ -1,5 +1,5 @@
 import type { PracticeInvoice } from '@/modules/workspace/api/clients';
-import { resolvePdfBrand, drawBrandedHeader } from '@/modules/workspace/pdf/pdfBrand';
+import { resolvePdfBrand, drawBrandedHeader, bankRows } from '@/modules/workspace/pdf/pdfBrand';
 
 /**
  * The invoice a nutritionist hands their own client.
@@ -234,11 +234,18 @@ export async function generatePracticeInvoicePdf(
   // which is the delay a practice is trying to avoid. Only shown while money
   // is actually owed.
   if (invoice.status === 'sent' || invoice.status === 'draft') {
+    // The bank details, when the practice has configured any. A practice that
+    // takes cash in the clinic has none, and then this is the sentence-only
+    // block it has always been - no empty "Bank details" heading.
+    const bank = brand.bank ? bankRows(brand.bank) : [];
     const payTo = [brand.contactLine, brand.legalName].filter(Boolean)[0];
-    if (payTo) {
+    if (payTo || bank.length) {
+      // The panel holds the two text lines (44pt) and, below them, the bank
+      // rows: two fields per line at 13pt, starting 16pt under the text.
+      const bankH = bank.length ? 16 + Math.ceil(bank.length / 2) * 13 : 0;
       y += 12;
       doc.setFillColor(248, 249, 247);
-      doc.roundedRect(margin, y - 12, right - margin, 44, 4, 4, 'F');
+      doc.roundedRect(margin, y - 12, right - margin, 44 + bankH, 4, 4, 'F');
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(120);
@@ -253,6 +260,29 @@ export async function generatePracticeInvoicePdf(
       ) as string[];
       doc.text(lines.slice(0, 2), margin + 12, y + 16);
       y += 48;
+
+      if (bank.length) {
+        // Two columns: a client copying an account number into their banking
+        // app reads label-above-value, not a run-on sentence.
+        const colW = (right - margin - 24) / 2;
+        let rowY = y;
+        bank.forEach(([label, value], i) => {
+          const x = margin + 12 + (i % 2) * colW;
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          doc.setTextColor(135);
+          doc.text(label.toUpperCase(), x, rowY);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(60);
+          // Clamp to the column so a long bank or branch name cannot run into
+          // the neighbouring value.
+          const v = doc.splitTextToSize(value, colW - 10)[0] as string;
+          doc.text(v, x, rowY + 9);
+          if (i % 2 === 1) rowY += 13;
+        });
+        y = rowY + (bank.length % 2 === 1 ? 13 : 0) + 12;
+      }
     }
   }
 

@@ -26,6 +26,12 @@ export interface Workspace {
   pdf_contact_line: string | null;
   pdf_footer_note: string | null;
   invoice_terms: string | null;
+  bank_account_name: string | null;
+  bank_account_number: string | null;
+  bank_name: string | null;
+  bank_branch: string | null;
+  bank_ifsc: string | null;
+  bank_upi_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -88,6 +94,13 @@ export interface WorkspaceBranding {
   pdf_footer_note?: string | null;
   /** Default terms copied onto each new invoice. */
   invoice_terms?: string | null;
+  /** Bank details printed on the practice's invoices; any may be unset. */
+  bank_account_name?: string | null;
+  bank_account_number?: string | null;
+  bank_name?: string | null;
+  bank_branch?: string | null;
+  bank_ifsc?: string | null;
+  bank_upi_id?: string | null;
   white_label: boolean;
   /** True when this workspace's practitioner credentials are verified. */
   verified?: boolean;
@@ -101,6 +114,13 @@ export interface UpdateBrandingPayload {
   pdf_contact_line?: string;
   pdf_footer_note?: string;
   invoice_terms?: string;
+  // Bank details; '' clears a field rather than leaving it as it was.
+  bank_account_name?: string;
+  bank_account_number?: string;
+  bank_name?: string;
+  bank_branch?: string;
+  bank_ifsc?: string;
+  bank_upi_id?: string;
   white_label?: boolean;
 }
 

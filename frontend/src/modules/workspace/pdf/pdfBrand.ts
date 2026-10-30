@@ -32,7 +32,58 @@ export interface PdfBrand {
   tagline: string | null;
   contactLine: string | null;
   footerNote: string | null;
+  /** Bank / UPI details, or null when the practice has filled in none of them. */
+  bank: PdfBankDetails | null;
   whiteLabel: boolean;
+}
+
+/**
+ * The practice's bank details as printed. Present only when at least one field
+ * is set - a practice that takes cash must not get an empty heading, so the
+ * absence is modelled here rather than checked at every call site.
+ */
+export interface PdfBankDetails {
+  accountName: string | null;
+  accountNumber: string | null;
+  bankName: string | null;
+  branch: string | null;
+  ifsc: string | null;
+  upiId: string | null;
+}
+
+/** Collect the bank fields off a branding row, or null if none are filled in. */
+function bankFrom(b: {
+  bank_account_name?: string | null;
+  bank_account_number?: string | null;
+  bank_name?: string | null;
+  bank_branch?: string | null;
+  bank_ifsc?: string | null;
+  bank_upi_id?: string | null;
+} | null): PdfBankDetails | null {
+  const bank: PdfBankDetails = {
+    accountName: b?.bank_account_name?.trim() || null,
+    accountNumber: b?.bank_account_number?.trim() || null,
+    bankName: b?.bank_name?.trim() || null,
+    branch: b?.bank_branch?.trim() || null,
+    ifsc: b?.bank_ifsc?.trim() || null,
+    upiId: b?.bank_upi_id?.trim() || null,
+  };
+  return Object.values(bank).some(Boolean) ? bank : null;
+}
+
+/**
+ * The bank block as label/value rows, in the order a client reads them when
+ * setting up a transfer. Empty fields are left out entirely.
+ */
+export function bankRows(bank: PdfBankDetails): Array<[string, string]> {
+  const rows: Array<[string, string]> = [];
+  if (bank.accountName) rows.push(['Account name', bank.accountName]);
+  if (bank.accountNumber) rows.push(['Account number', bank.accountNumber]);
+  if (bank.bankName) rows.push(['Bank', bank.bankName]);
+  if (bank.branch) rows.push(['Branch', bank.branch]);
+  if (bank.ifsc) rows.push(['IFSC', bank.ifsc]);
+  if (bank.upiId) rows.push(['UPI ID', bank.upiId]);
+  return rows;
 }
 
 /** #RGB / #RRGGBB (with optional alpha) → [r,g,b]; null on anything unparseable. */
@@ -112,6 +163,7 @@ export async function resolvePdfBrand(): Promise<PdfBrand> {
     tagline: b?.tagline || null,
     contactLine: b?.pdf_contact_line || null,
     footerNote: b?.pdf_footer_note || null,
+    bank: bankFrom(b),
     gstin: b?.gstin || null,
     whiteLabel,
   };
