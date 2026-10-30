@@ -76,6 +76,7 @@ const SECTIONS: { group: string; items: Dest[] }[] = [
     group: 'connect',
     items: [
       { label: 'appointments', icon: 'calendar-outline', route: '/(tabs)/more/appointments' },
+      { label: 'invoices', icon: 'receipt-outline', route: '/(tabs)/more/invoices' },
       { label: 'community', icon: 'people-outline', route: '/(tabs)/more/community' },
       { label: 'notifications', icon: 'notifications-outline', route: '/(tabs)/more/notifications' },
       { label: 'settings', icon: 'settings-outline', route: '/(tabs)/more/settings' },

@@ -27,6 +27,7 @@ export default function MoreLayout() {
       <Stack.Screen name="recipes" options={{ title: 'Recipes' }} />
       <Stack.Screen name="supplements" options={{ title: 'Supplements' }} />
       <Stack.Screen name="reports" options={{ title: 'Reports' }} />
+      <Stack.Screen name="invoices" options={{ title: 'Invoices' }} />
       <Stack.Screen name="files" options={{ title: 'Files' }} />
       <Stack.Screen name="appointments" options={{ title: 'Appointments' }} />
       <Stack.Screen name="meeting/[id]" options={{ title: 'Video call', headerShown: false }} />
