@@ -734,9 +734,28 @@ export interface InvoicePayment {
   recorded_by_name: string | null;
 }
 
+/**
+ * How a client paid. The backend validates against this same set; older rows
+ * can hold anything (or nothing), so read `method` as a plain string.
+ *
+ * `qr` is separate from `upi` on purpose: a scanned QR and a transfer to a
+ * number are different things to the practice reconciling them.
+ */
+export const PAYMENT_METHODS = [
+  { value: 'upi', label: 'UPI' },
+  { value: 'bank', label: 'Bank transfer' },
+  { value: 'qr', label: 'QR scan' },
+  { value: 'card', label: 'Card' },
+  { value: 'cash', label: 'Cash' },
+  { value: 'cheque', label: 'Cheque' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number]['value'];
+
 export interface AddPaymentInput {
   amount_paise: number;
-  method?: string;
+  method?: PaymentMethod;
   reference?: string;
   note?: string;
   received_at?: string;

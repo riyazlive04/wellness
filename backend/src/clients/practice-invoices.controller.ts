@@ -42,8 +42,17 @@ class SaveInvoiceDto {
   @IsOptional() @IsISO8601() due_at?: string;
 }
 
+/**
+ * The ways a client actually pays a practice. `qr` is its own method and not
+ * folded into `upi`: a scanned QR is what the practice remembers doing, and a
+ * direct number transfer reconciles against a different line in their bank.
+ */
+export const PAYMENT_METHODS = [
+  'upi', 'bank', 'qr', 'card', 'cash', 'cheque', 'other',
+] as const;
+
 class MarkPaidDto {
-  @IsOptional() @IsIn(['upi', 'cash', 'bank', 'card', 'other']) method?: string;
+  @IsOptional() @IsIn(PAYMENT_METHODS) method?: string;
   @IsOptional() @IsString() @MaxLength(200) note?: string;
   @IsOptional() @IsISO8601() paid_at?: string;
 }
@@ -56,7 +65,12 @@ class AddPaymentDto {
    */
   @IsInt() @Min(1) @Max(1_000_000_000) amount_paise!: number;
 
-  @IsOptional() @IsIn(['upi', 'cash', 'bank', 'card', 'cheque', 'other']) method?: string;
+  /**
+   * How the money arrived. Validated here rather than by a CHECK on the
+   * column: there is live payment data whose method is free text or NULL, and
+   * a constraint strict enough to be worth having would reject it.
+   */
+  @IsOptional() @IsIn(PAYMENT_METHODS) method?: string;
   /** Their own reference: a UPI ref, a cheque number. */
   @IsOptional() @IsString() @MaxLength(200) reference?: string;
   @IsOptional() @IsString() @MaxLength(500) note?: string;

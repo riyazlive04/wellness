@@ -7,7 +7,9 @@ import { Glass } from '@/design-system';
 import { ApiError } from '@/lib/api';
 import {
   clientsApi,
+  PAYMENT_METHODS,
   type InvoiceLine,
+  type PaymentMethod,
   type PracticeInvoice,
 } from '@/modules/workspace/api/clients';
 import { generatePracticeInvoicePdf } from './practiceInvoicePdf';
@@ -19,6 +21,14 @@ const inr = (paise: number) =>
     minimumFractionDigits: paise % 100 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   })}`;
+
+/**
+ * The picker's label for a method. Older rows hold free text from before the
+ * set existed, so anything unrecognised is shown as it was typed rather than
+ * hidden.
+ */
+const methodLabel = (method: string) =>
+  PAYMENT_METHODS.find((m) => m.value === method)?.label ?? method;
 
 const STATUS: Record<PracticeInvoice['status'], { label: string; cls: string }> = {
   draft: { label: 'Draft', cls: 'border-foreground/15 bg-foreground/[0.04] text-foreground/60' },
@@ -305,7 +315,7 @@ function InvoiceLedger({
   onChanged: () => void;
 }) {
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState('upi');
+  const [method, setMethod] = useState<PaymentMethod>('upi');
   const [reference, setReference] = useState('');
   const [parts, setParts] = useState('');
 
@@ -412,7 +422,7 @@ function InvoiceLedger({
               <span className="w-20 tabular-nums font-semibold">{inr(p.amount_paise)}</span>
               <span className="text-foreground/55">
                 {new Date(p.received_at).toLocaleDateString('en-IN')}
-                {p.method ? ` · ${p.method}` : ''}
+                {p.method ? ` · ${methodLabel(p.method)}` : ''}
                 {p.reference ? ` · ${p.reference}` : ''}
               </span>
               <button
@@ -449,12 +459,12 @@ function InvoiceLedger({
           </div>
           <select
             value={method}
-            onChange={(e) => setMethod(e.target.value)}
+            onChange={(e) => setMethod(e.target.value as PaymentMethod)}
             aria-label="How they paid"
             className="rounded-lg border border-foreground/10 bg-canvas px-2 py-1.5 text-xs focus:border-teal-400/60 focus:outline-none"
           >
-            {['upi', 'cash', 'bank', 'card', 'cheque', 'other'].map((m) => (
-              <option key={m} value={m}>{m}</option>
+            {PAYMENT_METHODS.map((m) => (
+              <option key={m.value} value={m.value}>{m.label}</option>
             ))}
           </select>
           <input

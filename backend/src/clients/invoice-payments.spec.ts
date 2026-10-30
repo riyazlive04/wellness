@@ -101,7 +101,7 @@ describe('an instalment schedule', () => {
 
 describe('which instalments get reminded', () => {
   const DAY = 86_400_000;
-  const LEAD = 5;
+  const LEAD = 7;
   const today = new Date('2026-11-10T09:00:00+05:30');
   const dayOffset = (n: number) => new Date(today.getTime() + n * DAY);
 
@@ -109,13 +109,21 @@ describe('which instalments get reminded', () => {
   const inWindow = (when: 'before' | 'due', dueInDays: number) =>
     when === 'before' ? dueInDays > 0 && dueInDays <= LEAD : dueInDays <= 0;
 
-  it('nudges five days ahead, inclusive', () => {
-    expect(inWindow('before', 5)).toBe(true);
+  it('nudges a week ahead, inclusive', () => {
+    expect(inWindow('before', 7)).toBe(true);
     expect(inWindow('before', 1)).toBe(true);
   });
 
   it('does not nudge something due further out', () => {
-    expect(inWindow('before', 6)).toBe(false);
+    expect(inWindow('before', 8)).toBe(false);
+  });
+
+  it('sends one nudge inside the week, not one per day of it', () => {
+    // 7 days + on the day, decided deliberately: there is no separate
+    // five-day reminder, and a row claimed at seven days is not claimed
+    // again at five - a client chased three times for the same money stops
+    // reading any of it.
+    expect(inWindow('before', 5)).toBe(true);
   });
 
   it('does not use the early nudge for something due today', () => {

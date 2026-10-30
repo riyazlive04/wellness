@@ -66,6 +66,35 @@ describe('NotificationsService client WhatsApp', () => {
     expect(sent).toHaveLength(1);
   });
 
+  it('sends a payment reminder, with the balance and due date intact', async () => {
+    // The reminder cron hands the whole sentence over in `body`; WhatsApp is
+    // the channel that actually reaches a client who owes money.
+    const { service, sent } = build();
+    await service.notifyClient('ws-1', 'c-1', {
+      type: 'invoice:reminder',
+      title: 'Payment due in 7 days',
+      body: 'Asha Menon, ₹4,500 on INV-0012, due 6 Nov 2026.',
+      url: '/portal/invoices',
+    });
+    expect(sent).toHaveLength(1);
+    expect(sent[0].text).toContain('₹4,500');
+    expect(sent[0].text).toContain('INV-0012');
+    expect(sent[0].text).toContain('due 6 Nov 2026');
+  });
+
+  it('a WhatsApp failure does not throw back into the caller', async () => {
+    // The reminder row is already claimed by the time this runs: a throw here
+    // would either crash the cron or leave the mark set with nothing sent.
+    const { service } = build();
+    (service as unknown as { whatsapp: { enabled: boolean; sendText: () => Promise<boolean> } }).whatsapp = {
+      enabled: true,
+      sendText: () => Promise.reject(new Error('gateway down')),
+    };
+    await expect(
+      service.notifyClient('ws-1', 'c-1', { type: 'invoice:reminder', title: 'Payment due today' }),
+    ).resolves.toBeUndefined();
+  });
+
   it('does not copy chat messages to WhatsApp', async () => {
     const { service, sent } = build();
     await service.notifyClient('ws-1', 'c-1', { type: 'message:admin', title: 'A note from your nutritionist' });

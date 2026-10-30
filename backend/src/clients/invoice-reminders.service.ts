@@ -8,10 +8,15 @@ import { skipScheduled } from '../common/schedulers';
 /**
  * Reminding a client that money is due.
  *
- * Two reminders, which practices asked for by name: five days before the due
+ * Two reminders, which practices asked for by name: a week before the due
  * date, and again on the day. Chasing payment is the job nutritionists like
  * least and put off longest, so an invoice that reminds for itself is worth
  * more here than another report.
+ *
+ * Both go out over WhatsApp as well as the app, which notifyClient already
+ * does for 'invoice:reminder' (see CLIENT_WHATSAPP_TYPES) - from the
+ * practice's own linked number, and silently skipped for a practice that has
+ * not linked one.
  *
  * Both run off a claim-by-UPDATE: the row is marked in the same statement that
  * selects it, so two overlapping runs cannot both send. The mark is cleared
@@ -26,8 +31,12 @@ import { skipScheduled } from '../common/schedulers';
 export class InvoiceRemindersService {
   private readonly logger = new Logger(InvoiceRemindersService.name);
 
-  /** Days before the due date for the first nudge. */
-  private static readonly LEAD_DAYS = 5;
+  /**
+   * Days before the due date for the first nudge. A week, not five days: the
+   * client needs a weekend and a salary date inside the window for the
+   * reminder to be actionable rather than just early.
+   */
+  private static readonly LEAD_DAYS = 7;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -67,7 +76,7 @@ export class InvoiceRemindersService {
   private async remindInstalments(when: 'before' | 'due'): Promise<number> {
     const mark = when === 'before' ? 'reminded_before_at' : 'reminded_due_at';
     const window = when === 'before'
-      // The five-days-out nudge: due inside the lead window but not yet today,
+      // The week-ahead nudge: due inside the lead window but not yet today,
       // so this and the on-the-day reminder never fire for the same row twice.
       ? `s2.due_at::date > current_date
          AND s2.due_at::date <= current_date + ${InvoiceRemindersService.LEAD_DAYS}`
@@ -95,7 +104,10 @@ export class InvoiceRemindersService {
                   WHERE p.instalment_id = s.id) AS paid_paise,
                 (SELECT client_id FROM public.practice_invoices WHERE id = s.invoice_id) AS client_id,
                 (SELECT workspace_id FROM public.practice_invoices WHERE id = s.invoice_id) AS workspace_id,
-                (SELECT number FROM public.practice_invoices WHERE id = s.invoice_id) AS number`,
+                (SELECT number FROM public.practice_invoices WHERE id = s.invoice_id) AS number,
+                (SELECT c.name FROM public.clients c
+                   WHERE c.id = (SELECT client_id FROM public.practice_invoices
+                                  WHERE id = s.invoice_id)) AS client_name`,
     );
 
     for (const r of due) {
@@ -105,10 +117,10 @@ export class InvoiceRemindersService {
         title: when === 'before'
           ? `Instalment ${r.seq} due in ${days(r.due_at)}`
           : `Instalment ${r.seq} is due today`,
-        body: `${rupees(owed)} on ${display(r.number)}.`,
+        body: body(r.client_name, r.number, r.due_at, owed, Number(r.paid_paise ?? 0)),
         url: '/portal/invoices',
         // One tag per instalment per reminder, so the on-the-day message
-        // replaces nothing and the five-day one is not re-shown.
+        // replaces nothing and the week-ahead one is not re-shown.
         tag: `invoice-inst-${r.id}-${when}`,
       });
     }
@@ -144,21 +156,18 @@ export class InvoiceRemindersService {
       RETURNING i.id, i.client_id, i.workspace_id, i.number, i.total_paise, i.due_at,
                 (SELECT COALESCE(sum(p.amount_paise), 0)::int
                    FROM public.practice_invoice_payments p
-                  WHERE p.invoice_id = i.id) AS paid_paise`,
+                  WHERE p.invoice_id = i.id) AS paid_paise,
+                (SELECT c.name FROM public.clients c WHERE c.id = i.client_id) AS client_name`,
     );
 
     for (const r of due) {
       const owed = r.total_paise - Number(r.paid_paise ?? 0);
-      // A part-paid invoice is chased for the balance, not the total: being
-      // asked again for money already handed over is how a practice looks
-      // like it is not keeping track.
-      const part = Number(r.paid_paise ?? 0) > 0 ? ' still outstanding' : '';
       void this.notifications.notifyClient(r.workspace_id, r.client_id, {
         type: 'invoice:reminder',
         title: when === 'before'
           ? `Payment due in ${days(r.due_at)}`
           : 'Payment due today',
-        body: `${rupees(owed)}${part} on ${display(r.number)}.`,
+        body: body(r.client_name, r.number, r.due_at, owed, Number(r.paid_paise ?? 0)),
         url: '/portal/invoices',
         tag: `invoice-${r.id}-${when}`,
       });
@@ -177,6 +186,7 @@ interface InstalmentDue {
   client_id: string;
   workspace_id: string;
   number: number;
+  client_name: string | null;
 }
 
 interface InvoiceDue {
@@ -187,6 +197,37 @@ interface InvoiceDue {
   total_paise: number;
   paid_paise: number;
   due_at: Date;
+  client_name: string | null;
+}
+
+/**
+ * What the client reads, in the app and on WhatsApp.
+ *
+ * Name, invoice number, due date and the exact balance, because the WhatsApp
+ * copy arrives with no screen around it: a bare amount from an unexpected
+ * number is the kind of message a client ignores or, worse, pays twice.
+ *
+ * A part-paid invoice is chased for the balance, not the total - being asked
+ * again for money already handed over is how a practice looks like it is not
+ * keeping track.
+ */
+function body(
+  name: string | null,
+  number: number,
+  due: Date,
+  owed: number,
+  paid: number,
+): string {
+  const who = name?.trim() ? `${name.trim()}, ` : '';
+  const part = paid > 0 ? ' still outstanding' : '';
+  return `${who}${rupees(owed)}${part} on ${display(number)}, due ${onDate(due)}.`;
+}
+
+/** "14 Nov 2026" - the date a client would read off a bank app. */
+function onDate(due: Date): string {
+  return new Date(due).toLocaleDateString('en-IN', {
+    day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata',
+  });
 }
 
 /** "5 days" / "tomorrow" - the reminder reads as a sentence either way. */
