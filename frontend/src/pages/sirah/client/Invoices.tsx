@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Download, FileText, Loader2, Wallet } from 'lucide-react';
+import { CalendarClock, Download, FileText, Loader2, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -110,7 +110,8 @@ export default function ClientInvoices() {
               ) : (
                 <ul className="divide-y divide-foreground/[0.04]">
                   {rows.map((inv) => (
-                    <li key={inv.id} className="flex flex-wrap items-center gap-3 px-5 py-4">
+                    <li key={inv.id} className="px-5 py-4">
+                    <div className="flex flex-wrap items-center gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-semibold tabular-nums">
@@ -151,6 +152,12 @@ export default function ClientInvoices() {
                       >
                         <Download className="h-3.5 w-3.5" /> PDF
                       </button>
+                    </div>
+
+                    {/* The payment plan, if the practice set one. Voided
+                        invoices are left alone: a cancelled bill has no
+                        schedule to keep. */}
+                    {inv.status !== 'void' && <SchedulePanel invoiceId={inv.id} />}
                     </li>
                   ))}
                 </ul>
@@ -160,6 +167,110 @@ export default function ClientInvoices() {
         </motion.div>
       </div>
     </ClientLayout>
+  );
+}
+
+/**
+ * The client's own EMI schedule for one invoice.
+ *
+ * The practice could already split a bill into instalments, but the client
+ * could not see the result - their portal showed one lump sum and a line
+ * telling them to ask their nutritionist how to pay. So the person actually
+ * making the payments had to message someone to find out when the next one
+ * was due, which is exactly the chasing the schedule was meant to remove.
+ *
+ * Renders nothing at all when there is no schedule, which is most invoices:
+ * a single-payment bill should not grow an empty "payment plan" heading.
+ *
+ * Read-only on purpose. A client who cannot meet a date should message their
+ * practitioner, who can extend it; letting the client move their own due
+ * dates would make the schedule meaningless.
+ */
+function SchedulePanel({ invoiceId }: { invoiceId: string }) {
+  const q = useQuery({
+    queryKey: ['me', 'invoice', invoiceId, 'instalments'],
+    queryFn: () => clientsApi.myInvoiceInstalments(invoiceId),
+    // The schedule changes only when the practice edits it, which is rare.
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  const parts = q.data ?? [];
+  // Silent on failure as well as when empty: a schedule that cannot be
+  // fetched must not turn the invoice list into an error page, because the
+  // invoice itself above is still correct and still downloadable.
+  if (parts.length === 0) return null;
+
+  const paidCount = parts.filter((p) => p.balance_paise === 0).length;
+  // The next thing they actually have to pay - the earliest unpaid part.
+  const next = parts.find((p) => p.balance_paise > 0) ?? null;
+
+  return (
+    <div className="mt-3 rounded-2xl border border-foreground/[0.07] bg-foreground/[0.02] p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <CalendarClock className="h-3.5 w-3.5 flex-shrink-0 text-foreground/45" />
+        <span className="text-[11px] font-semibold text-foreground/75">
+          Payment plan
+        </span>
+        <span className="text-[11px] tabular-nums text-foreground/50">
+          {paidCount} of {parts.length} paid
+        </span>
+        {next && (
+          <span className={cn(
+            'ml-auto rounded-full border px-2 py-0.5 text-[10px] tabular-nums',
+            next.overdue
+              ? 'border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300'
+              : 'border-foreground/15 bg-foreground/[0.04] text-foreground/65',
+          )}>
+            {next.overdue ? 'Overdue: ' : 'Next: '}
+            {inr(next.balance_paise)} on {when(next.due_at)}
+          </span>
+        )}
+      </div>
+
+      <ul className="mt-2 space-y-1">
+        {parts.map((p) => {
+          const settled = p.balance_paise === 0;
+          return (
+            <li
+              key={p.id}
+              className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]"
+            >
+              <span className="w-10 flex-shrink-0 tabular-nums text-foreground/45">
+                {p.seq}/{parts.length}
+              </span>
+              <span className={cn(
+                'tabular-nums',
+                settled ? 'text-foreground/45 line-through' : 'font-medium text-foreground/85',
+              )}>
+                {inr(p.amount_paise)}
+              </span>
+              <span className={cn(
+                'tabular-nums',
+                p.overdue ? 'text-red-700 dark:text-red-300' : 'text-foreground/55',
+              )}>
+                {settled ? 'paid' : `due ${when(p.due_at)}`}
+              </span>
+              {/* Part-paid instalment: without this the row reads as unpaid
+                  and a client who has already sent half would think it was
+                  never received. */}
+              {!settled && p.paid_paise > 0 && (
+                <span className="tabular-nums text-amber-700 dark:text-amber-300">
+                  {inr(p.paid_paise)} received, {inr(p.balance_paise)} left
+                </span>
+              )}
+              {/* Say so when a date moved, so the client trusts the dates
+                  they are looking at rather than the ones they remember. */}
+              {p.extended_count > 0 && !settled && (
+                <span className="text-foreground/40">
+                  (moved from {when(p.original_due_at)})
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 

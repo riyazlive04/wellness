@@ -23,6 +23,7 @@ import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
 import { PracticeInvoicesService } from './practice-invoices.service';
+import { InvoicePaymentsService } from './invoice-payments.service';
 import { FcmService } from './fcm.service';
 import { BookingHoursService } from './booking-hours.service';
 
@@ -235,6 +236,7 @@ export class MeController {
     private readonly fcm: FcmService,
     private readonly bookingHours: BookingHoursService,
     private readonly practiceInvoices: PracticeInvoicesService,
+    private readonly invoicePayments: InvoicePaymentsService,
   ) {}
 
   // ────────────────────────────────────────────────────────────────────
@@ -690,6 +692,17 @@ export class MeController {
   async myInvoice(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return {
       data: await this.practiceInvoices.getForClient(await this.clients.clientIdOf(user.id), id),
+    };
+  }
+
+  @Get('invoices/:id/instalments')
+  @ApiOperation({ summary: "This client's own payment schedule for one invoice." })
+  async myInvoiceInstalments(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return {
+      data: await this.invoicePayments.listInstalmentsForClient(
+        await this.clients.clientIdOf(user.id),
+        id,
+      ),
     };
   }
 

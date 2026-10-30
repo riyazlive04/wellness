@@ -1578,6 +1578,10 @@ export const clientsApi = {
   myInvoices: () => api.get<PracticeInvoice[]>('/api/v1/me/invoices'),
   myInvoice: (id: string) => api.get<PracticeInvoice>(`/api/v1/me/invoices/${id}`),
 
+  /** My own payment schedule for one invoice. Read-only: only the practice can change a due date. */
+  myInvoiceInstalments: (id: string) =>
+    api.get<InvoiceInstalment[]>(`/api/v1/me/invoices/${id}/instalments`),
+
   myFiles: () => api.get<FileItem[]>('/api/v1/me/files'),
   signFile: (id: string) =>
     api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/me/files/${id}/download`),

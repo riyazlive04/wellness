@@ -260,6 +260,31 @@ export class InvoicePaymentsService {
   }
 
   /** The schedule with what has been paid against each instalment. */
+  /**
+   * The client's own schedule, for the client portal.
+   *
+   * Scoped by client_id rather than workspace_id - the caller here is the
+   * person who owes the money, not a member of the practice, so the ownership
+   * test has to be "is this invoice yours" and nothing else. Drafts are
+   * excluded for the same reason they are hidden from the client's invoice
+   * list: a schedule the practice is still drafting is not yet a promise.
+   *
+   * Read-only, deliberately. A client seeing a date they cannot meet should
+   * message their practitioner, who can extend it - letting the client move
+   * their own due dates would make the schedule meaningless.
+   */
+  async listInstalmentsForClient(clientId: string, invoiceId: string): Promise<InstalmentRow[]> {
+    const [owned] = await this.prisma.$queryRawUnsafe<{ id: string }[]>(
+      `SELECT i.id
+         FROM public.practice_invoices i
+        WHERE i.id = $1::uuid AND i.client_id = $2::uuid AND i.status <> 'draft'
+        LIMIT 1`,
+      invoiceId, clientId,
+    );
+    if (!owned) throw new NotFoundException('Invoice not found.');
+    return this.readInstalments(invoiceId);
+  }
+
   private async readInstalments(invoiceId: string): Promise<InstalmentRow[]> {
     const rows = await this.prisma.$queryRawUnsafe<RawInstalment[]>(
       `SELECT s.id, s.invoice_id, s.seq, s.amount_paise, s.due_at,
