@@ -655,6 +655,10 @@ function HealthField({ icon: Icon, label, value, color }: {
 function MealsTab({ clientId }: { clientId: string }) {
   const q = useQuery({ queryKey: ['client', clientId, 'meals'], queryFn: () => clientsApi.clientWorkspaceMeals(clientId, 30) });
   const [openMealId, setOpenMealId] = useState<string | null>(null);
+  // The meal photo shown full size. A 44px thumbnail is enough to spot a
+  // plate in a list but useless for judging a portion, which is the whole
+  // reason a client photographed it.
+  const [openPhoto, setOpenPhoto] = useState<string | null>(null);
   if (q.isLoading) return <CardSpinner />;
   const meals = q.data ?? [];
   return (
@@ -667,11 +671,26 @@ function MealsTab({ clientId }: { clientId: string }) {
           {groupByPlate(meals).map((g) => (
             <li key={g.key} className="px-5 py-3">
               <div className="flex items-start gap-3">
-                <div className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-xl border border-foreground/[0.06] bg-foreground/[0.03]">
-                  {g.items[0].photo_url
-                    ? <img src={g.items[0].photo_url} alt="" loading="lazy" className="h-full w-full object-cover" />
-                    : <Utensils className="h-4 w-4 text-foreground/35" />}
-                </div>
+                {g.items[0].photo_url ? (
+                  <button
+                    type="button"
+                    onClick={() => setOpenPhoto(g.items[0].photo_url)}
+                    title="View photo"
+                    aria-label="View the full meal photo"
+                    className="group grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-xl border border-foreground/[0.06] bg-foreground/[0.03] transition hover:border-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--brand-blue))]/50"
+                  >
+                    <img
+                      src={g.items[0].photo_url}
+                      alt="Meal photo"
+                      loading="lazy"
+                      className="h-full w-full object-cover transition group-hover:scale-105"
+                    />
+                  </button>
+                ) : (
+                  <div className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-xl border border-foreground/[0.06] bg-foreground/[0.03]">
+                    <Utensils className="h-4 w-4 text-foreground/35" />
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   {g.items.length > 1 ? (
                     <>
@@ -724,6 +743,7 @@ function MealsTab({ clientId }: { clientId: string }) {
         </ul>
       )}
       {openMealId && <MealDetailSheet clientId={clientId} mealId={openMealId} onClose={() => setOpenMealId(null)} />}
+      {openPhoto && <MealPhotoLightbox src={openPhoto} onClose={() => setOpenPhoto(null)} />}
     </Glass>
   );
 }
@@ -1588,6 +1608,60 @@ function MetricStat({ icon: Icon, value, label, color }: {
 
 function CardSpinner() {
   return <div className="py-12 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>;
+}
+
+/**
+ * A meal photo at full size.
+ *
+ * The list thumbnail is 44px, which is enough to recognise that a plate was
+ * photographed and useless for the thing a practitioner actually does with
+ * it: look at the portion and judge it. The full photo was already being
+ * fetched and then shown at postage-stamp size.
+ *
+ * Click anywhere, or press Escape, to close. The image itself swallows the
+ * click so that studying it does not dismiss it by accident.
+ */
+function MealPhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    // The page behind must not scroll while this is open, or dismissing it
+    // leaves the list somewhere the practitioner did not put it.
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] grid place-items-center bg-black/80 p-4 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Meal photo"
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close"
+        className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+      >
+        <X className="h-4.5 w-4.5" />
+      </button>
+      <img
+        src={src}
+        alt="Meal photo"
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-[88vh] max-w-full rounded-2xl object-contain shadow-2xl"
+      />
+      <p className="pointer-events-none absolute bottom-5 left-0 right-0 text-center text-[11px] text-white/45">
+        Click anywhere or press Esc to close
+      </p>
+    </div>
+  );
 }
 
 function Empty({ text, pad }: { text: string; pad?: boolean }) {
