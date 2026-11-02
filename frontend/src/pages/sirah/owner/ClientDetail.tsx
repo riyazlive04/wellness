@@ -1635,9 +1635,13 @@ function MealPhotoLightbox({ src, onClose }: { src: string; onClose: () => void 
     };
   }, [onClose]);
 
+  // A load failure must say so. The first version showed an empty overlay on
+  // error, which is indistinguishable from a broken feature.
+  const [failed, setFailed] = useState(false);
+
   return (
     <div
-      className="fixed inset-0 z-[60] grid place-items-center bg-black/80 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -1647,16 +1651,30 @@ function MealPhotoLightbox({ src, onClose }: { src: string; onClose: () => void 
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+        className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
       >
-        <X className="h-4.5 w-4.5" />
+        <X className="h-5 w-5" />
       </button>
-      <img
-        src={src}
-        alt="Meal photo"
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[88vh] max-w-full rounded-2xl object-contain shadow-2xl"
-      />
+
+      {failed ? (
+        <div className="text-center text-sm text-white/70">
+          <Camera className="mx-auto mb-2 h-7 w-7 text-white/30" />
+          That photo could not be loaded.
+        </div>
+      ) : (
+        /* Explicit pixel ceilings rather than max-w-full: inside a centred
+           flex parent that resolves against the flex line, not the viewport,
+           which collapsed the image to nothing. */
+        <img
+          src={src}
+          alt="Meal photo"
+          onClick={(e) => e.stopPropagation()}
+          onError={() => setFailed(true)}
+          style={{ maxHeight: 'calc(100vh - 6rem)', maxWidth: 'calc(100vw - 4rem)' }}
+          className="block h-auto w-auto rounded-2xl object-contain shadow-2xl"
+        />
+      )}
+
       <p className="pointer-events-none absolute bottom-5 left-0 right-0 text-center text-[11px] text-white/45">
         Click anywhere or press Esc to close
       </p>
