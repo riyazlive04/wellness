@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -1639,9 +1640,13 @@ function MealPhotoLightbox({ src, onClose }: { src: string; onClose: () => void 
   // error, which is indistinguishable from a broken feature.
   const [failed, setFailed] = useState(false);
 
-  return (
+  // Rendered into <body>, not in place. This sits inside <Glass> and a couple
+  // of framer-motion wrappers, and ANY transformed ancestor becomes the
+  // containing block for position:fixed - so the overlay was being offset and
+  // clipped by the card instead of covering the viewport.
+  return createPortal(
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -1678,7 +1683,8 @@ function MealPhotoLightbox({ src, onClose }: { src: string; onClose: () => void 
       <p className="pointer-events-none absolute bottom-5 left-0 right-0 text-center text-[11px] text-white/45">
         Click anywhere or press Esc to close
       </p>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
