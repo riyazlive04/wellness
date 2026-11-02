@@ -7,7 +7,9 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
+import { signPhotoKeys, uploadPhotoDataUrl } from './plate-photo-storage';
 import { CalculatorService } from '../nutrition-engine/calculator.service';
 import {
   ENGINE_VERSION,
@@ -63,6 +65,7 @@ export class PlateVisionService {
     private readonly prisma: PrismaService,
     private readonly calculator: CalculatorService,
     private readonly insights: PlateInsightService,
+    private readonly config: ConfigService,
   ) {}
 
   // ────────────────────────────────────────────────────────────────────
@@ -84,13 +87,17 @@ export class PlateVisionService {
       .catch(() => { throw new BadRequestException("That photo couldn't be read. Try a JPG or PNG."); });
     const thumb = await toThumbDataUrl(photo).catch(() => null);
     const note = notes?.trim().slice(0, 1000) || null;
+    // The bytes go to the bucket; the row keeps a key. On failure the inline
+    // photo is still written, so a storage outage costs quality, not the meal.
+    const storageKey = await uploadPhotoDataUrl(this.config, client.id, photoUrl);
     const plateId = await this.prisma.$transaction(async (tx) => {
       const [plate] = await tx.$queryRawUnsafe<Array<{ id: string }>>(
         `INSERT INTO public.plate_vision_meals
-           (client_id, workspace_id, meal_type, photo_url, notes, logged_at, source, totals, item_count, resolved_count, thumb_url)
-         VALUES ($1::uuid, $2::uuid, $3::public.meal_type, $4, $5, now(), 'manual', '{}'::jsonb, 1, 0, $6)
+           (client_id, workspace_id, meal_type, photo_url, photo_storage_key, notes, logged_at, source, totals, item_count, resolved_count, thumb_url)
+         VALUES ($1::uuid, $2::uuid, $3::public.meal_type, $4, $5, $6, now(), 'manual', '{}'::jsonb, 1, 0, $7)
          RETURNING id`,
-        client.id, client.workspace_id, mealType, photoUrl, note, thumb,
+        client.id, client.workspace_id, mealType,
+        storageKey ? null : photoUrl, storageKey, note, thumb,
       );
       await tx.$queryRawUnsafe(
         `INSERT INTO public.meal_logs
@@ -224,22 +231,26 @@ export class PlateVisionService {
     const loggedAt = parseDate(input.logged_at);
 
     const thumb = await thumbFromDataUrl(input.photo_url);
+    // As above: bucket first, inline only as the fallback.
+    const storageKey = input.photo_url
+      ? await uploadPhotoDataUrl(this.config, client.id, input.photo_url)
+      : null;
 
     // 2. Persist the plate parent + its item rows in one transaction.
     const plateId = await this.prisma.$transaction(async (tx) => {
       const [plate] = await tx.$queryRawUnsafe<Array<{ id: string }>>(
         `INSERT INTO public.plate_vision_meals
-           (client_id, workspace_id, meal_type, photo_url, notes, logged_at, source,
+           (client_id, workspace_id, meal_type, photo_url, photo_storage_key, notes, logged_at, source,
             totals, item_count, resolved_count, ai_confidence, ai_model, engine_version,
             nutrition_source, analysis, thumb_url)
-         VALUES ($1::uuid, $2::uuid, $3::public.meal_type, $4, $5, $6::timestamptz, $7,
+         VALUES ($1::uuid, $2::uuid, $3::public.meal_type, $4, $17, $5, $6::timestamptz, $7,
                  $8::jsonb, $9, $10, $11, $12, $13,
                  $14, $15::jsonb, $16)
          RETURNING id`,
         client.id,
         client.workspace_id,
         input.meal_type,
-        input.photo_url ?? null,
+        storageKey ? null : (input.photo_url ?? null),
         input.notes ?? null,
         loggedAt,
         input.source ?? 'plate_vision',
@@ -254,6 +265,7 @@ export class PlateVisionService {
         nutritionSource,
         input.analysis ? JSON.stringify(sanitiseAnalysis(input.analysis)) : null,
         thumb,
+        storageKey,
       );
 
       for (const c of computed) {
@@ -352,7 +364,24 @@ export class PlateVisionService {
       userId,
       String(d),
     );
-    return rows.map(toPlate);
+    return (await this.withSignedPhotos(rows)).map(toPlate);
+  }
+
+  /**
+   * Turn storage keys into signed URLs for a batch of rows, in one call.
+   *
+   * A row that has a key but fails to sign keeps whatever photo_url it had,
+   * so a storage hiccup degrades the picture rather than losing the meal.
+   */
+  private async withSignedPhotos(rows: RawPlateRow[]): Promise<RawPlateRow[]> {
+    const keys = rows.map((r) => r.photo_storage_key ?? null).filter((k): k is string => !!k);
+    if (!keys.length) return rows;
+    const signed = await signPhotoKeys(this.config, keys);
+    for (const r of rows) {
+      const key = r.photo_storage_key;
+      if (key && signed[key]) r.photo_url = signed[key];
+    }
+    return rows;
   }
 
   async getMyPlate(userId: string, plateId: string): Promise<PlateMeal> {
@@ -365,7 +394,8 @@ export class PlateVisionService {
       userId,
     );
     if (!row) throw new NotFoundException(`Plate ${plateId} not found.`);
-    const plate = toPlate(row);
+    const [signedRow] = await this.withSignedPhotos([row]);
+    const plate = toPlate(signedRow);
     plate.items = await this.itemsForPlate(plateId);
     return plate;
   }
@@ -529,7 +559,7 @@ export class PlateVisionService {
 
 const PLATE_SELECT = `
   SELECT p.id, p.client_id, p.workspace_id, p.meal_type::text AS meal_type,
-         p.photo_url, p.notes, p.logged_at, p.source,
+         p.photo_url, p.photo_storage_key, p.notes, p.logged_at, p.source,
          p.totals, p.item_count, p.resolved_count,
          p.ai_confidence::text AS ai_confidence, p.ai_model, p.engine_version,
          p.nutrition_source, p.analysis,
@@ -543,6 +573,7 @@ interface RawPlateRow {
   workspace_id: string | null;
   meal_type: string;
   photo_url: string | null;
+  photo_storage_key?: string | null;
   notes: string | null;
   logged_at: Date;
   source: string;

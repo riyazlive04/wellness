@@ -43,6 +43,7 @@ import { LimitsService, PlanLimitException } from '../tenancy/limits.service';
 import { VideoKeysService } from '../video-keys/video-keys.service';
 import { UsageService } from '../usage/usage.service';
 import { WorkspaceRecipesService } from '../workspace-recipes/workspace-recipes.service';
+import { signPhotoKeys, uploadPhotoDataUrl } from '../plate-vision/plate-photo-storage';
 import { PushService } from './push.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuthCacheService } from '../auth/auth-cache.service';
@@ -3745,14 +3746,38 @@ export class ClientsService {
     await this.assertClientInWorkspace(workspaceId, clientId);
     const d = clamp(days, 1, 365);
     await this.backfillPlateThumbs(clientId, d);
+    // Drains the legacy inline photos a batch at a time, so old meals gain a
+    // full picture rather than staying on the thumbnail forever. Done here
+    // rather than by calling PlateVisionService: this is a ten-row loop, and
+    // taking that dependency would couple two modules for no gain.
+    await this.backfillPlatePhotos(clientId, d);
     // A photo link, else the plate's small thumbnail. Never the full inline
     // photo: a data: URL can be ~300 KB and this list returns up to 300 meals.
-    return this.prisma.$queryRawUnsafe(
+    type MealRow = {
+      id: string;
+      meal_type: string;
+      meal_name: string | null;
+      kcal: number | null;
+      detected_name: string | null;
+      cooking_method: string | null;
+      ai_confidence: number | null;
+      nutrition_snapshot: unknown;
+      audit_id: string | null;
+      resolution_status: string | null;
+      photo_url: string | null;
+      logged_at: string;
+      /** Dropped before returning: the caller gets a signed photo_url instead. */
+      photo_storage_key?: string | null;
+    };
+    const rows = await this.prisma.$queryRawUnsafe<MealRow[]>(
       `SELECT m.id, m.meal_type::text AS meal_type, m.meal_name,
               m.kcal, m.detected_name, m.cooking_method,
               COALESCE(CASE WHEN m.photo_url ~ '^https?://' THEN m.photo_url END,
                        CASE WHEN p.photo_url ~ '^https?://' THEN p.photo_url END,
                        p.thumb_url) AS photo_url,
+              -- Signed below. Preferred over everything above: it is the full
+              -- photo without the ~100 kB of inline base64 this list refuses.
+              p.photo_storage_key,
               m.ai_confidence::float AS ai_confidence,
               m.nutrition_snapshot, m.audit_id, m.resolution_status,
               -- So the UI can show one scanned plate as one row. Without it,
@@ -3769,6 +3794,53 @@ export class ClientsService {
       clientId,
       String(d),
     );
+
+    // One batched signing call for the whole page, never one per row.
+    const signed = await signPhotoKeys(
+      this.config,
+      rows.map((r) => r.photo_storage_key ?? null).filter((k): k is string => !!k),
+    );
+    for (const r of rows) {
+      const key = r.photo_storage_key;
+      // A signed URL beats the thumbnail the COALESCE above fell back to; if
+      // signing failed we keep that thumbnail rather than showing nothing.
+      if (key && signed[key]) r.photo_url = signed[key];
+      delete r.photo_storage_key;
+    }
+    return rows;
+  }
+
+  /**
+   * Move legacy inline plate photos into the bucket, a few at a time.
+   *
+   * These rows hold the photo as a ~100 kB data: URI, which is the only copy,
+   * so each list read migrates a small batch it is already touching. The
+   * backlog drains as the feature is used and a failed upload simply retries
+   * next time. The inline copy is cleared only once the upload succeeded.
+   */
+  private async backfillPlatePhotos(clientId: string, days: number): Promise<void> {
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string; photo_url: string }>>(
+      `SELECT id, photo_url FROM public.plate_vision_meals
+        WHERE client_id = $1::uuid
+          AND photo_storage_key IS NULL
+          AND photo_url LIKE 'data:image/%'
+          AND logged_at >= now() - ($2 || ' days')::interval
+        ORDER BY logged_at DESC
+        LIMIT 10`,
+      clientId,
+      String(days),
+    );
+    for (const r of rows) {
+      const key = await uploadPhotoDataUrl(this.config, clientId, r.photo_url);
+      if (!key) continue;
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE public.plate_vision_meals
+            SET photo_storage_key = $1, photo_url = NULL
+          WHERE id = $2::uuid AND photo_storage_key IS NULL`,
+        key,
+        r.id,
+      );
+    }
   }
 
   /**
