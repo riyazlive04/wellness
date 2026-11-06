@@ -99,9 +99,12 @@ export function SugarChart({
   const pts = points.map((p, i) => ({ x: xOf(i), y: yOf(p.value), value: p.value, flag: p.flag }));
   const lineColor = SERIES_COLOR[marker];
 
-  // Values can be denser than dates - they sit above the line rather than
-  // sharing one axis row - but not unlimited.
-  const valueEvery = points.length <= 8 ? 1 : points.length <= 16 ? 2 : 3;
+  // Cap the NUMBER of labels, not the step. A fixed "every 3rd" still
+  // overlaps once the range is long enough: measured at 90 readings it put
+  // 29 labels on top of each other. Eleven is what fits across 282px of plot
+  // at font 8 with three-digit values and a few px of air.
+  const MAX_VALUE_LABELS = 11;
+  const valueEvery = Math.max(1, Math.ceil(points.length / MAX_VALUE_LABELS));
   const valueIdx = points.map((_, i) => i).filter((i) => i % valueEvery === 0);
 
   // Only label the first, middle and last dates: three fit, eight overlap.
