@@ -27,10 +27,11 @@ import { useTheme } from '@/hooks/use-theme';
 import { ApiError } from '@/lib/api';
 import { labsApi } from '@/lib/labs-api';
 import {
-  BAND_COLOR, BAND_LABEL, SPIKE_NOTE, SUGAR_LABEL, SUGAR_MARKERS, SUGAR_REFERENCE_NOTE,
+  BAND_COLOR, BAND_LABEL, MARKER_UNIT, SPIKE_NOTE, SUGAR_LABEL, SUGAR_MARKERS,
+  referenceNoteFor,
   SUGAR_SHORT, TREND_COLOR, TREND_LABEL, annotateSugarTrend, sugarBand, sugarTrendReason,
   sugarWeek, sugarWeekStarts, sugarMonths, monthLabel, weekRangeLabel, weekStart,
-  type SugarMarker, type SugarTrendPoint, type SugarWeekDay,
+  type TrackedMarker, type SugarTrendPoint, type SugarWeekDay,
 } from '@/lib/sugar-bands';
 import { radius, spacing } from '@/lib/theme';
 
@@ -55,6 +56,38 @@ function prettyDate(iso: string): string {
 }
 
 export default function BloodSugar() {
+  return (
+    <ReadingsScreen
+      markers={SUGAR_MARKERS}
+      title="Today's blood sugar"
+      hint="Fill in what you tested. Leave the rest blank."
+      trendTitle="Daily blood sugar"
+      emptyHint="No readings yet. Save today&apos;s numbers above and your coloured trend starts here."
+    />
+  );
+}
+
+/**
+ * One screen for any set of self-logged readings.
+ *
+ * Sugar and blood pressure differ only in which markers they show and what
+ * the headings say: the entry card, bands, spike rings, weekly and monthly
+ * views are identical. They get separate screens rather than separate
+ * components because mg/dL and mmHg cannot share a chart axis.
+ */
+export function ReadingsScreen({
+  markers,
+  title,
+  hint,
+  trendTitle,
+  emptyHint,
+}: {
+  markers: readonly TrackedMarker[];
+  title: string;
+  hint: string;
+  trendTitle: string;
+  emptyHint: string;
+}) {
   const t = useTheme();
   const qc = useQueryClient();
   const [date, setDate] = useState(todayISO());
@@ -78,7 +111,7 @@ export default function BloodSugar() {
   });
 
   // Only the boxes with a usable number in them get sent.
-  const entered = SUGAR_MARKERS
+  const entered = markers
     .map((code) => ({ code, value: Number(values[code]) }))
     .filter((r) => values[r.code]?.trim() && Number.isFinite(r.value) && r.value > 0);
 
@@ -108,8 +141,8 @@ export default function BloodSugar() {
   // week is on screen, so a Monday's flag is judged against the previous week
   // instead of losing its baseline at the week boundary.
   const trendByMarker = useMemo(() => {
-    const out = {} as Record<SugarMarker, SugarTrendPoint[]>;
-    for (const code of SUGAR_MARKERS) {
+    const out = {} as Record<TrackedMarker, SugarTrendPoint[]>;
+    for (const code of markers) {
       const s = historyQ.data?.series.find((x) => x.markerCode === code);
       out[code] = annotateSugarTrend(
         (s?.points ?? [])
@@ -118,36 +151,36 @@ export default function BloodSugar() {
       );
     }
     return out;
-  }, [historyQ.data]);
+  }, [historyQ.data, markers]);
 
   /** The all-readings line, with each dot's flag carried along. */
   const seriesByMarker = useMemo(() => {
-    const out = {} as Record<SugarMarker, SugarPoint[]>;
-    for (const code of SUGAR_MARKERS) {
+    const out = {} as Record<TrackedMarker, SugarPoint[]>;
+    for (const code of markers) {
       out[code] = trendByMarker[code].map(
         (p): SugarPoint => ({ takenOn: p.takenOn, value: p.value, flag: p.flag }),
       );
     }
     return out;
-  }, [trendByMarker]);
+  }, [trendByMarker, markers]);
 
   /** Weeks with at least one reading of any marker, oldest first. */
   const weeks = useMemo(() => {
     const set = new Set<string>();
-    for (const code of SUGAR_MARKERS) {
+    for (const code of markers) {
       for (const w of sugarWeekStarts(trendByMarker[code])) set.add(w);
     }
     return [...set].sort();
-  }, [trendByMarker]);
+  }, [trendByMarker, markers]);
 
   /** Months with at least one reading, oldest first. */
   const months = useMemo(() => {
     const set = new Set<string>();
-    for (const code of SUGAR_MARKERS) {
+    for (const code of markers) {
       for (const m of sugarMonths(trendByMarker[code])) set.add(m);
     }
     return [...set].sort();
-  }, [trendByMarker]);
+  }, [trendByMarker, markers]);
 
   const monthIdx = Math.max(0, months.length - 1 + monthBack);
   const month = months[Math.min(monthIdx, Math.max(0, months.length - 1))];
@@ -158,7 +191,7 @@ export default function BloodSugar() {
   const weekIdx = Math.max(0, weeks.length - 1 + weekBack);
   const start = weeks[Math.min(weekIdx, Math.max(0, weeks.length - 1))];
 
-  const anyData = SUGAR_MARKERS.some((c) => seriesByMarker[c].length > 0);
+  const anyData = markers.some((c) => seriesByMarker[c].length > 0);
 
   if (historyQ.isLoading) {
     return (
@@ -188,9 +221,9 @@ export default function BloodSugar() {
               <Ionicons name="water" size={16} color="#E11D48" />
             </View>
             <View style={{ flex: 1 }}>
-              <AppText variant="heading">Today&apos;s blood sugar</AppText>
+              <AppText variant="heading">{title}</AppText>
               <AppText variant="caption" tone="faint">
-                Fill in what you tested. Leave the rest blank.
+                {hint}
               </AppText>
             </View>
           </View>
@@ -253,7 +286,7 @@ export default function BloodSugar() {
             )}
           </View>
 
-          {SUGAR_MARKERS.map((code) => {
+          {markers.map((code) => {
             const raw = values[code] ?? '';
             const num = Number(raw);
             const show = raw.trim() !== '' && Number.isFinite(num) && num > 0;
@@ -283,7 +316,7 @@ export default function BloodSugar() {
                     ]}
                   />
                   <AppText variant="caption" tone="faint" style={{ width: 38 }}>
-                    mg/dL
+                    {MARKER_UNIT[code]}
                   </AppText>
                 </View>
                 {band ? (
@@ -333,7 +366,7 @@ export default function BloodSugar() {
         {/* ── Charts ───────────────────────────────────────────────── */}
         <View style={{ gap: 4, marginTop: spacing.sm }}>
           <Eyebrow>Your trend</Eyebrow>
-          <AppText variant="title">Daily blood sugar</AppText>
+          <AppText variant="title">{trendTitle}</AppText>
         </View>
 
         {anyData ? (
@@ -454,11 +487,11 @@ export default function BloodSugar() {
         {!anyData ? (
           <Card>
             <AppText variant="muted" tone="muted">
-              No readings yet. Save today&apos;s numbers above and your coloured trend starts here.
+              {emptyHint}
             </AppText>
           </Card>
         ) : (
-          SUGAR_MARKERS.map((code) => {
+          markers.map((code) => {
             const pts = seriesByMarker[code];
             if (pts.length === 0) return null;
             const week = period === 'week' && start ? sugarWeek(trendByMarker[code], start) : null;
@@ -487,7 +520,7 @@ export default function BloodSugar() {
                         {last.value}
                       </AppText>
                       <AppText variant="muted" tone="muted" style={{ marginBottom: 7 }}>
-                        mg/dL
+                        {MARKER_UNIT[code]}
                       </AppText>
                     </View>
                     <AppText variant="caption" tone="faint">
@@ -539,7 +572,7 @@ export default function BloodSugar() {
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <Ionicons name="information-circle-outline" size={15} color={t.colors.textFaint} />
             <AppText variant="caption" tone="faint" style={{ flex: 1, lineHeight: 17 }}>
-              {SUGAR_REFERENCE_NOTE}
+              {referenceNoteFor(markers)}
             </AppText>
           </View>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>

@@ -175,6 +175,7 @@
     "items": {
       "dailyLog": "Daily log",
       "bloodSugar": "Blood sugar",
+      "bloodPressure": "Blood pressure",
       "exercise": "Daily exercise",
       "reminders": "Meal & water reminders",
       "habits": "Habits",

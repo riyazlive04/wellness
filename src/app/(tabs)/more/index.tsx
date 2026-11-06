@@ -36,6 +36,7 @@ const SECTIONS: { group: string; items: Dest[] }[] = [
     items: [
       { label: 'dailyLog', icon: 'clipboard-outline', route: '/(tabs)/more/daily-log' },
       { label: 'bloodSugar', icon: 'water-outline', route: '/(tabs)/more/blood-sugar' },
+      { label: 'bloodPressure', icon: 'heart-outline', route: '/(tabs)/more/blood-pressure' },
       { label: 'exercise', icon: 'barbell-outline', route: '/(tabs)/more/exercise' },
       { label: 'reminders', icon: 'alarm-outline', route: '/(tabs)/more/reminders' },
       { label: 'habits', icon: 'repeat-outline', route: '/(tabs)/more/habits' },

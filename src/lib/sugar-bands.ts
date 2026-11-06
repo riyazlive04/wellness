@@ -16,7 +16,21 @@ export type SugarBand = 'low' | 'normal' | 'borderline' | 'high';
 
 /** The glycaemic readings a client can self-log; mirrors the backend allowlist. */
 export const SUGAR_MARKERS = ['fbs', 'ppbs_meal1', 'ppbs_meal2'] as const;
+/**
+ * Blood pressure, kept as its OWN set rather than folded into SUGAR_MARKERS.
+ *
+ * They cannot share a chart: mmHg and mg/dL on one y-axis would put a
+ * diastolic of 80 level with a hypo. Everything else - bands, spikes, the
+ * weekly and monthly views, the log card - is marker-agnostic and works for
+ * both, so the two sets flow through the same components.
+ */
+export const BP_MARKERS = ['bp_systolic', 'bp_diastolic'] as const;
+
 export type SugarMarker = (typeof SUGAR_MARKERS)[number];
+export type BpMarker = (typeof BP_MARKERS)[number];
+/** Any marker these charts can draw. */
+export type TrackedMarker = SugarMarker | BpMarker;
+
 
 export function isSugarMarker(code: string): code is SugarMarker {
   return (SUGAR_MARKERS as readonly string[]).includes(code);
@@ -33,17 +47,22 @@ interface BandSpec {
   axisMax: number;
 }
 
-const SPEC: Record<SugarMarker, BandSpec> = {
+const SPEC: Record<TrackedMarker, BandSpec> = {
   fbs: { low: 70, normal: 100, borderline: 126, axisMax: 180 },
   ppbs_meal1: { low: 70, normal: 140, borderline: 200, axisMax: 240 },
   ppbs_meal2: { low: 70, normal: 140, borderline: 200, axisMax: 240 },
+  // Published adult cut-offs: normal under 120/80, raised to 130/80, high
+  // from 140/90. The low edge matters here too - 90/60 and below is
+  // hypotension, which is its own problem rather than a good score.
+  bp_systolic: { low: 90, normal: 120, borderline: 140, axisMax: 180 },
+  bp_diastolic: { low: 60, normal: 80, borderline: 90, axisMax: 120 },
 };
 
-export function bandSpec(marker: SugarMarker): BandSpec {
+export function bandSpec(marker: TrackedMarker): BandSpec {
   return SPEC[marker];
 }
 
-export function sugarBand(marker: SugarMarker, value: number): SugarBand {
+export function sugarBand(marker: TrackedMarker, value: number): SugarBand {
   const s = SPEC[marker];
   if (value < s.low) return 'low';
   if (value < s.normal) return 'normal';
@@ -73,24 +92,32 @@ export const BAND_LABEL: Record<SugarBand, string> = {
   high: 'Well above range',
 };
 
-export const SUGAR_LABEL: Record<SugarMarker, string> = {
+export const SUGAR_LABEL: Record<TrackedMarker, string> = {
   fbs: 'Fasting',
   ppbs_meal1: 'After 1st meal',
   ppbs_meal2: 'After 2nd meal',
+  bp_systolic: 'Systolic (upper)',
+  bp_diastolic: 'Diastolic (lower)',
 };
 
 /** Short form for a tab or a cramped chip. */
-export const SUGAR_SHORT: Record<SugarMarker, string> = {
+export const SUGAR_SHORT: Record<TrackedMarker, string> = {
   fbs: 'Fasting',
   ppbs_meal1: '1st meal',
   ppbs_meal2: '2nd meal',
+  bp_systolic: 'Systolic',
+  bp_diastolic: 'Diastolic',
 };
 
 /** A distinct line colour per series, for a chart with all three together. */
-export const SERIES_COLOR: Record<SugarMarker, string> = {
+export const SERIES_COLOR: Record<TrackedMarker, string> = {
   fbs: '#0F766E',        // teal-700
   ppbs_meal1: '#C2410C', // orange-700
   ppbs_meal2: '#7E22CE', // purple-700
+  // Deep red / slate for BP: strongly distinct from each other on one chart,
+  // and from the sugar palette, so the two charts never look interchangeable.
+  bp_systolic: '#B91C1C',  // red-700
+  bp_diastolic: '#334155', // slate-700
 };
 
 /**
@@ -99,7 +126,7 @@ export const SERIES_COLOR: Record<SugarMarker, string> = {
  * `axisMax` is a floor, not a cap: a reading of 320 must stay on the chart, so
  * the top is raised to fit the data and the high band stretches with it.
  */
-export function bandsFor(marker: SugarMarker, dataMax: number) {
+export function bandsFor(marker: TrackedMarker, dataMax: number) {
   const s = SPEC[marker];
   const top = Math.max(s.axisMax, Math.ceil((dataMax + 20) / 20) * 20);
   return {
@@ -124,6 +151,17 @@ export const SUGAR_REFERENCE_NOTE =
   'Bands follow general adult reference values (fasting 70-99, post-meal under 140 mg/dL). '
   + 'They are a guide for discussion with your practitioner, not a diagnosis, and your own '
   + 'targets may differ.';
+
+/** The same disclaimer, worded for blood pressure. */
+export const BP_REFERENCE_NOTE =
+  'Bands follow general adult reference values (normal under 120/80, raised to 130/80, '
+  + 'high from 140/90 mmHg). They are a guide for discussion with your practitioner, not a '
+  + 'diagnosis, and your own targets may differ.';
+
+/** Whichever disclaimer belongs under a chart of these markers. */
+export function referenceNoteFor(markers: readonly TrackedMarker[]): string {
+  return markers.some((x) => x.startsWith('bp_')) ? BP_REFERENCE_NOTE : SUGAR_REFERENCE_NOTE;
+}
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Spike detection - a SECOND, independent signal from the bands above.
@@ -197,6 +235,31 @@ export const SPIKE_REL = 0.1;
 /** Readings that must be in the baseline before anything can be flagged. */
 export const SPIKE_MIN_PRIOR = 3;
 
+/**
+ * The rise margin, per marker, because the units are not comparable.
+ *
+ * Blood pressure swings 10-20 mmHg between morning and evening in a perfectly
+ * stable person, so the glucose margin would ring almost every reading and
+ * the ring would stop meaning anything. 20 mmHg systolic / 12 diastolic is
+ * roughly where a clinician starts asking what changed.
+ */
+const SPIKE_MARGIN: Record<TrackedMarker, { abs: number; rel: number }> = {
+  fbs: { abs: SPIKE_ABS_MIN, rel: SPIKE_REL },
+  ppbs_meal1: { abs: SPIKE_ABS_MIN, rel: SPIKE_REL },
+  ppbs_meal2: { abs: SPIKE_ABS_MIN, rel: SPIKE_REL },
+  bp_systolic: { abs: 20, rel: 0.15 },
+  bp_diastolic: { abs: 12, rel: 0.15 },
+};
+
+/** The unit a marker's readings are in. */
+export const MARKER_UNIT: Record<TrackedMarker, string> = {
+  fbs: 'mg/dL',
+  ppbs_meal1: 'mg/dL',
+  ppbs_meal2: 'mg/dL',
+  bp_systolic: 'mmHg',
+  bp_diastolic: 'mmHg',
+};
+
 export type SugarTrendFlag = 'spike' | 'dip' | null;
 
 export interface SugarTrendPoint {
@@ -229,6 +292,8 @@ function dayGap(from: string, to: string): number {
  */
 export function annotateSugarTrend(
   points: { takenOn: string; value: number }[],
+  // Defaults to the glucose margin so every existing call site is unchanged.
+  marker: TrackedMarker = 'fbs',
 ): SugarTrendPoint[] {
   const sorted = [...points].sort((a, b) => a.takenOn.localeCompare(b.takenOn));
 
@@ -254,7 +319,8 @@ export function annotateSugarTrend(
 
     const baseline = prior.reduce((sum, q) => sum + q.value, 0) / prior.length;
     const delta = p.value - baseline;
-    const margin = Math.max(SPIKE_ABS_MIN, baseline * SPIKE_REL);
+    const m = SPIKE_MARGIN[marker];
+    const margin = Math.max(m.abs, baseline * m.rel);
 
     return {
       takenOn: p.takenOn,
@@ -302,7 +368,7 @@ export const TREND_LABEL: Record<'spike' | 'dip', string> = {
  * than left to be inferred from a ring.
  */
 export const SPIKE_NOTE =
-  `A red ring marks a reading that rose at least ${SPIKE_ABS_MIN} mg/dL (or 10%) above your own `
+  'A red ring marks a reading that rose sharply above your own '
   + `${SPIKE_WINDOW_DAYS}-day average, even when it is still inside the normal range. The band `
   + 'colours say how high a reading is; the ring says how fast it changed.';
 

@@ -28,7 +28,7 @@ import { AppText } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import {
   BAND_COLOR, SERIES_COLOR, SUGAR_LABEL, TREND_COLOR, bandsFor, sugarBand,
-  type SugarMarker, type SugarTrendFlag, type SugarWeekDay,
+  type TrackedMarker, type SugarTrendFlag, type SugarWeekDay,
 } from '@/lib/sugar-bands';
 import { spacing } from '@/lib/theme';
 
@@ -62,7 +62,7 @@ export function SugarChart({
   points,
   height = 180,
 }: {
-  marker: SugarMarker;
+  marker: TrackedMarker;
   points: SugarPoint[];
   height?: number;
 }) {
@@ -233,7 +233,7 @@ export function SugarWeekChart({
   week,
   height = 180,
 }: {
-  marker: SugarMarker;
+  marker: TrackedMarker;
   week: SugarWeekDay[];
   height?: number;
 }) {
