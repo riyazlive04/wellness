@@ -247,6 +247,31 @@ export const SPIKE_REL = 0.1;
 /** Readings that must be in the baseline before anything can be flagged. */
 export const SPIKE_MIN_PRIOR = 3;
 
+/**
+ * The rise margin, per marker, because the units are not comparable.
+ *
+ * Blood pressure swings 10-20 mmHg between morning and evening in a perfectly
+ * stable person, so the glucose margin would ring almost every reading and
+ * the ring would stop meaning anything. 20 mmHg systolic / 12 diastolic is
+ * roughly where a clinician starts asking what changed.
+ */
+const SPIKE_MARGIN: Record<TrackedMarker, { abs: number; rel: number }> = {
+  fbs: { abs: SPIKE_ABS_MIN, rel: SPIKE_REL },
+  ppbs_meal1: { abs: SPIKE_ABS_MIN, rel: SPIKE_REL },
+  ppbs_meal2: { abs: SPIKE_ABS_MIN, rel: SPIKE_REL },
+  bp_systolic: { abs: 20, rel: 0.15 },
+  bp_diastolic: { abs: 12, rel: 0.15 },
+};
+
+/** The unit a marker's readings are in, for the note under its chart. */
+export const MARKER_UNIT: Record<TrackedMarker, string> = {
+  fbs: 'mg/dL',
+  ppbs_meal1: 'mg/dL',
+  ppbs_meal2: 'mg/dL',
+  bp_systolic: 'mmHg',
+  bp_diastolic: 'mmHg',
+};
+
 export type SugarTrendFlag = 'spike' | 'dip' | null;
 
 export interface SugarTrendPoint {
@@ -279,6 +304,8 @@ function dayGap(from: string, to: string): number {
  */
 export function annotateSugarTrend(
   points: { takenOn: string; value: number }[],
+  // Defaults to the glucose margin so every existing call site is unchanged.
+  marker: TrackedMarker = 'fbs',
 ): SugarTrendPoint[] {
   const sorted = [...points].sort((a, b) => a.takenOn.localeCompare(b.takenOn));
 
@@ -304,7 +331,8 @@ export function annotateSugarTrend(
 
     const baseline = prior.reduce((sum, q) => sum + q.value, 0) / prior.length;
     const delta = p.value - baseline;
-    const margin = Math.max(SPIKE_ABS_MIN, baseline * SPIKE_REL);
+    const m = SPIKE_MARGIN[marker];
+    const margin = Math.max(m.abs, baseline * m.rel);
 
     return {
       takenOn: p.takenOn,
@@ -358,7 +386,7 @@ export const TREND_CLASS: Record<'spike' | 'dip', string> = {
  * than left to be inferred from a ring.
  */
 export const SPIKE_NOTE =
-  `A red ring marks a reading that rose at least ${SPIKE_ABS_MIN} mg/dL (or 10%) above your own `
+  `A red ring marks a reading that rose sharply above your own `
   + `${SPIKE_WINDOW_DAYS}-day average, even when it is still inside the normal range. The band `
   + 'colours say how high a reading is; the ring says how fast it changed.';
 

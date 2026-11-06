@@ -65,6 +65,7 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
         (series?.points ?? [])
           .filter((p) => p.value != null)
           .map((p) => ({ takenOn: p.takenOn, value: p.value as number })),
+        code,
       );
     }
     return out;
