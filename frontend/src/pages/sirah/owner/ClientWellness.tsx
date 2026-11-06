@@ -601,8 +601,15 @@ function dayTick(iso: string): string {
 function CaloriesWeightChart({ rows }: { rows: DayRow[] }) {
   // Cap the label COUNT, not the step: a fixed "every 3rd" still collides
   // once the range is long enough. Learned on the sugar charts.
+  // Which dates carry a printed value. Precomputed rather than worked out in
+  // the formatter: Recharts gives a LabelList formatter the VALUE only, with
+  // no index, so an index-based rule silently prints nothing.
   const every = Math.max(1, Math.ceil(rows.length / 10));
-  const label = (v: number, i: number) => (i % every === 0 && v > 0 ? Math.round(v) : '');
+  const labelled = new Set(rows.filter((_, i) => i % every === 0).map((r) => r.date));
+  const kcalLabel = (v: number, e: { payload?: DayRow }) =>
+    (v > 0 && e?.payload && labelled.has(e.payload.date) ? String(Math.round(v)) : '');
+  const kgLabel = (v: number, e: { payload?: DayRow }) =>
+    (v > 0 && e?.payload && labelled.has(e.payload.date) ? String(v) : '');
 
   const anyWeight = rows.some((r) => r.weight_kg != null);
 
@@ -644,7 +651,7 @@ function CaloriesWeightChart({ rows }: { rows: DayRow[] }) {
           />
           <Bar yAxisId="kcal" dataKey="total_kcal" name="total_kcal" fill="#0F766E" fillOpacity={0.55} radius={[3, 3, 0, 0]}>
             <LabelList dataKey="total_kcal" position="top" fontSize={9} fill="currentColor"
-              className="text-foreground/55" formatter={label} />
+              className="text-foreground/60" formatter={kcalLabel} />
           </Bar>
           {anyWeight && (
             <Line
@@ -658,7 +665,7 @@ function CaloriesWeightChart({ rows }: { rows: DayRow[] }) {
               // A client weighs weekly and eats daily: the gap is the truth.
               connectNulls={false}
             >
-              <LabelList dataKey="weight_kg" position="top" fontSize={9} fill="#C2410C" formatter={label} />
+              <LabelList dataKey="weight_kg" position="top" offset={8} fontSize={9} fill="#C2410C" formatter={kgLabel} />
             </Line>
           )}
         </ComposedChart>
@@ -670,7 +677,9 @@ function CaloriesWeightChart({ rows }: { rows: DayRow[] }) {
 /** Protein per day. Its own chart: grams share no axis with calories. */
 function ProteinChart({ rows }: { rows: DayRow[] }) {
   const every = Math.max(1, Math.ceil(rows.length / 10));
-  const label = (v: number, i: number) => (i % every === 0 && v > 0 ? Math.round(v) : '');
+  const labelled = new Set(rows.filter((_, i) => i % every === 0).map((r) => r.date));
+  const label = (v: number, e: { payload?: DayRow }) =>
+    (v > 0 && e?.payload && labelled.has(e.payload.date) ? String(Math.round(v)) : '');
 
   return (
     <div className="h-44 w-full">
