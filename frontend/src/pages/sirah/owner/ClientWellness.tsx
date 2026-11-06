@@ -169,7 +169,11 @@ function MealsTab({ clientId }: { clientId: string }) {
       </div>
 
       {/* Calories and weight on one timeline, then protein below it. */}
-      {dayRows.length > 0 && (
+      {/* Always rendered once the client has ANY meal history. An earlier
+          version hid the whole card when the selected range was empty, which
+          also hid the range switch - so picking 30d on a client who last
+          logged six weeks ago left no way back to 3m or All. */}
+      {(trendsQ.isLoading || dayRows.length > 0 || (trendTotals?.days ?? 0) > 0 || days !== 365) && (
         <Glass className="p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
@@ -198,7 +202,13 @@ function MealsTab({ clientId }: { clientId: string }) {
               ))}
             </div>
           </div>
-          <CaloriesWeightChart rows={dayRows} />
+          {dayRows.length > 0 ? (
+            <CaloriesWeightChart rows={dayRows} />
+          ) : (
+            <div className="grid h-24 place-items-center text-center text-xs text-foreground/50">
+              No meals logged in this range. Try a longer one.
+            </div>
+          )}
           <div className="mt-1 flex flex-wrap items-center gap-3 text-[10px] text-foreground/45">
             <span className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-sm bg-[#0F766E]" /> Calories (kcal)
