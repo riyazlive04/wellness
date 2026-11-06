@@ -705,7 +705,7 @@ function CaloriesWeightChart({ rows }: { rows: DayRow[] }) {
             <YAxis
               yAxisId="kg"
               orientation="right"
-              domain={['dataMin - 2', 'dataMax + 2']}
+              domain={['dataMin - 1.5', 'dataMax + 1.5']}
               tick={{ fontSize: 10 }}
               stroke="currentColor"
               className="text-foreground/40"
@@ -734,7 +734,11 @@ function CaloriesWeightChart({ rows }: { rows: DayRow[] }) {
               // A client weighs weekly and eats daily: the gap is the truth.
               connectNulls={false}
             >
-              <LabelList dataKey="kgLabel" position="top" offset={9} fontSize={9} fill="#C2410C" />
+              {/* BELOW its point, while the calorie label sits above its
+                  bar. Both above collided wherever the weight line passed
+                  near a bar top - 63.1 printed on top of 802 - which is
+                  exactly the reading a coach is trying to compare. */}
+              <LabelList dataKey="kgLabel" position="bottom" offset={7} fontSize={9} fill="#C2410C" />
             </Line>
           )}
         </ComposedChart>
