@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarClock, Check, Loader2, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -27,6 +27,7 @@ export function DailyLogDialog({ form, onClose }: { form: AssessmentForm; onClos
   const qc = useQueryClient();
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set(form.assigned_client_ids ?? []));
+  const [pruned, setPruned] = useState(false);
   const [remind, setRemind] = useState<boolean>(!!form.reminder_time);
   const [time, setTime] = useState<string>(form.reminder_time ?? '20:00');
 
@@ -35,6 +36,21 @@ export function DailyLogDialog({ form, onClose }: { form: AssessmentForm; onClos
     queryFn: () => clientsApi.list({ limit: 200 }),
   });
   const clients: ClientListItem[] = clientsQ.data?.items ?? [];
+
+  // assigned_client_ids is a plain uuid[] with no foreign key, so a deleted
+  // client leaves a dead id on the form. Seeding the checkboxes from it meant
+  // resending that id on every save, and the save refused the lot - the form
+  // became permanently unassignable. Drop anything the client list does not
+  // know about, once the list has loaded.
+  useEffect(() => {
+    if (!clientsQ.data || pruned) return;
+    const live = new Set(clients.map((c) => c.id));
+    setSelected((prev) => {
+      const next = new Set([...prev].filter((id) => live.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+    setPruned(true);
+  }, [clientsQ.data, clients, pruned]);
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return clients;

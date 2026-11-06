@@ -142,8 +142,26 @@ export class WorkspaceDailyFormController {
     if (dto.reminderTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(dto.reminderTime)) {
       throw new BadRequestException('reminderTime must be HH:MM, e.g. 20:00.');
     }
-    const ids = [...new Set(dto.clientIds ?? [])];
-    for (const c of ids) await this.assertClient(user.workspaceId, c);
+    // Drop ids that no longer name a live client in this workspace, rather
+    // than rejecting the whole save. A form keeps assigned_client_ids as a
+    // plain uuid[] with no foreign key, so deleting a client leaves a dead id
+    // behind; the dialog seeds its checkboxes from that list and resends it,
+    // so one deleted client made the form permanently unassignable. Found in
+    // production: a form stuck with 1 of 3 ids pointing at nothing.
+    const requested = [...new Set(dto.clientIds ?? [])];
+    const ids = requested.length
+      ? (await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+          `SELECT id FROM public.clients
+            WHERE workspace_id = $1::uuid AND id = ANY($2::uuid[])`,
+          user.workspaceId,
+          requested,
+        )).map((r) => r.id)
+      : [];
+    // Only complain if EVERY id was bad: that means the caller sent something
+    // wrong, rather than the form carrying old rubbish.
+    if (requested.length && !ids.length) {
+      throw new NotFoundException('Client not found in this workspace.');
+    }
 
     const [row] = await this.prisma.$queryRawUnsafe<Array<{ id: string; repeat_daily: boolean }>>(
       `UPDATE public.assessment_form_templates
