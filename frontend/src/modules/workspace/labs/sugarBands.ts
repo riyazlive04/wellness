@@ -418,6 +418,24 @@ export function sugarWeekStarts(trend: SugarTrendPoint[]): string[] {
   return [...set].sort();
 }
 
+/**
+ * Months that have at least one reading, oldest first, as 'YYYY-MM'.
+ *
+ * Only months with data, for the same reason sugarWeekStarts skips empty
+ * weeks: nobody wants to click through four blank months to reach their
+ * readings. Gaps WITHIN a shown month still render as gaps.
+ */
+export function sugarMonths(trend: SugarTrendPoint[]): string[] {
+  return [...new Set(trend.map((p) => p.takenOn.slice(0, 7)))].sort();
+}
+
+/** 'October 2026', the label on the month navigator. */
+export function monthLabel(month: string, locale = 'en-IN'): string {
+  return new Date(`${month}-01T00:00:00Z`).toLocaleDateString(locale, {
+    month: 'long', year: 'numeric', timeZone: 'UTC',
+  });
+}
+
 /** 'Mon 27 Oct - Sun 2 Nov', the label on the week navigator. */
 export function weekRangeLabel(start: string, locale = 'en-IN'): string {
   const fmt = (iso: string) =>

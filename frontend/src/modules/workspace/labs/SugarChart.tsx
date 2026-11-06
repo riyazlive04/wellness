@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea, Legend,
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea, Legend, LabelList,
 } from 'recharts';
 
 import { cn } from '@/lib/utils';
@@ -9,7 +9,8 @@ import type { LabHistory } from '@/modules/workspace/api/labs';
 import {
   BAND_CLASS, BAND_FILL, BAND_LABEL, SERIES_COLOR, SPIKE_NOTE, SUGAR_LABEL, SUGAR_MARKERS,
   SUGAR_REFERENCE_NOTE, TREND_CLASS, TREND_COLOR, TREND_LABEL, annotateSugarTrend, bandsFor,
-  sugarBand, sugarTrendReason, sugarWeek, sugarWeekStarts, weekRangeLabel, weekStart,
+  sugarBand, sugarTrendReason, sugarWeek, sugarWeekStarts, sugarMonths, monthLabel,
+  weekRangeLabel, weekStart,
   type SugarMarker, type SugarTrendPoint, type SugarWeekDay,
 } from './sugarBands';
 
@@ -40,7 +41,7 @@ import {
  */
 export function SugarChart({ history, className }: { history: LabHistory; className?: string }) {
   const [view, setView] = useState<'all' | SugarMarker>('all');
-  const [period, setPeriod] = useState<'week' | 'allTime'>('week');
+  const [period, setPeriod] = useState<'week' | 'month' | 'allTime'>('week');
 
   /** The sugar series that actually have readings, in a fixed order. */
   const available = useMemo(
@@ -82,6 +83,18 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
   const idx = Math.min(weekIdx, Math.max(0, weeks.length - 1));
   const start = weeks[idx];
 
+  /** Months that have at least one reading, oldest first. */
+  const months = useMemo(() => {
+    const set = new Set<string>();
+    for (const code of SUGAR_MARKERS) for (const m of sugarMonths(trend[code])) set.add(m);
+    return [...set].sort();
+  }, [trend]);
+
+  const [monthIdx, setMonthIdx] = useState(0);
+  useEffect(() => setMonthIdx(Math.max(0, months.length - 1)), [months.length]);
+  const mIdx = Math.min(monthIdx, Math.max(0, months.length - 1));
+  const month = months[mIdx];
+
   /**
    * One row per x-position, with a column per marker.
    *
@@ -117,7 +130,12 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
     const byDate = new Map<string, ChartRow>();
     for (const code of SUGAR_MARKERS) {
       for (const p of trend[code]) {
-        const row = byDate.get(p.takenOn) ?? { date: p.takenOn, label: p.takenOn };
+        // Month mode is all-time narrowed to one month; flags are still
+        // computed over the full history, so a 1st-of-the-month reading keeps
+        // the baseline from the end of the previous month.
+        if (period === 'month' && month && !p.takenOn.startsWith(month)) continue;
+        const row = byDate.get(p.takenOn)
+          ?? { date: p.takenOn, label: period === 'month' ? p.takenOn.slice(8) : p.takenOn };
         row[code] = p.value;
         if (p.flag) row[`${code}__flag`] = p.flag;
         const why = sugarTrendReason(p);
@@ -126,11 +144,23 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
       }
     }
     return [...byDate.values()].sort((a, b) => String(a.date).localeCompare(String(b.date)));
-  }, [period, start, trend]);
+  }, [period, start, month, trend]);
 
   if (!available.length) return null;
 
   const shown: SugarMarker[] = view === 'all' ? available : [view];
+
+  /**
+   * Whether to print each reading on the chart, and how often.
+   *
+   * Coaches review these constantly and asked not to hover for every value.
+   * Two limits make that readable: with several lines on one chart the labels
+   * collide with each OTHER, so they only show in single-marker view; and on
+   * a long range they collide with themselves, so every Nth is drawn. The
+   * tooltip still gives the exact value for any point.
+   */
+  const showValues = shown.length === 1;
+  const labelEvery = rows.length <= 10 ? 1 : rows.length <= 20 ? 2 : 3;
   const dataMax = Math.max(
     0,
     ...rows.flatMap((r) => shown.map((c) => Number(r[c] ?? 0))),
@@ -161,7 +191,34 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
       {/* Period switch, then the week navigator it controls. */}
       <div className="flex flex-wrap items-center gap-1.5">
         <Tab active={period === 'week'} onClick={() => setPeriod('week')}>This week</Tab>
+        <Tab active={period === 'month'} onClick={() => setPeriod('month')}>By month</Tab>
         <Tab active={period === 'allTime'} onClick={() => setPeriod('allTime')}>All readings</Tab>
+
+        {period === 'month' && months.length > 0 && (
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setMonthIdx(mIdx - 1)}
+              disabled={mIdx <= 0}
+              aria-label="Previous month"
+              className="rounded-full border border-foreground/10 p-1 text-foreground/60 hover:bg-foreground/[0.04] disabled:opacity-30"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <span className="min-w-[8.5rem] text-center text-[11px] font-semibold tabular-nums text-foreground/70">
+              {monthLabel(month)}
+            </span>
+            <button
+              type="button"
+              onClick={() => setMonthIdx(mIdx + 1)}
+              disabled={mIdx >= months.length - 1}
+              aria-label="Next month"
+              className="rounded-full border border-foreground/10 p-1 text-foreground/60 hover:bg-foreground/[0.04] disabled:opacity-30"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
         {period === 'week' && weeks.length > 0 && (
           <div className="ml-auto flex items-center gap-1">
@@ -235,7 +292,11 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
               tickFormatter={(d: string) =>
                 period === 'week'
                   ? d
-                  : new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                  : period === 'month'
+                    // The month is named above the chart; repeating it on
+                    // thirty ticks just crowds the axis.
+                    ? String(Number(d.slice(8)))
+                    : new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
               stroke="currentColor"
               className="text-foreground/40"
             />
@@ -289,7 +350,25 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
                 connectNulls={false}
                 dot={(props) => <SugarDot {...props} code={code} />}
                 activeDot={{ r: 4 }}
-              />
+              >
+                {/* Printed on the chart, not hidden behind a hover: a coach
+                    reviewing a month should read the numbers at a glance.
+                    Thinned on dense ranges, because thirty labels on one line
+                    overlap into an unreadable smear - and dropped entirely
+                    when several series share the chart, where they would
+                    collide with each other rather than with themselves. */}
+                {showValues && (
+                  <LabelList
+                    dataKey={code}
+                    position="top"
+                    offset={8}
+                    fontSize={9}
+                    fill={SERIES_COLOR[code]}
+                    formatter={(v: number, _e: unknown, i: number) =>
+                      (labelEvery === 1 || i % labelEvery === 0 ? String(v) : '')}
+                  />
+                )}
+              </Line>
             ))}
           </LineChart>
         </ResponsiveContainer>
