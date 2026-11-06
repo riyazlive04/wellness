@@ -242,6 +242,20 @@ export class LabsService {
       }
     }
 
+    // A systolic without a diastolic is not a blood pressure. Storing half of
+    // one gives a chart with a line that has no companion and a reading no
+    // practitioner can act on, so refuse it at the door.
+    const codes = new Set(readings.map((r) => r.markerCode));
+    if (codes.has('bp_systolic') !== codes.has('bp_diastolic')) {
+      throw new BadRequestException('Enter both blood pressure numbers, or neither.');
+    }
+    const sys = readings.find((r) => r.markerCode === 'bp_systolic')?.value;
+    const dia = readings.find((r) => r.markerCode === 'bp_diastolic')?.value;
+    if (sys !== undefined && dia !== undefined && dia >= sys) {
+      // Almost always the two boxes filled in the wrong order.
+      throw new BadRequestException('The upper number must be higher than the lower one.');
+    }
+
     for (const r of readings) {
       const marker = markerByCode(r.markerCode)!;
       await this.prisma.$executeRawUnsafe(
@@ -657,7 +671,12 @@ export interface ImportPreview {
  * What a client may log themselves: the glycaemic readings a home glucometer
  * actually produces. Deliberately a allowlist - see logSelfReadings.
  */
-export const SELF_LOGGABLE = new Set(['fbs', 'ppbs_meal1', 'ppbs_meal2']);
+export const SELF_LOGGABLE = new Set([
+  'fbs', 'ppbs_meal1', 'ppbs_meal2',
+  // A home BP monitor is the same situation as a glucometer: the client is
+  // the only one in the room when the reading happens.
+  'bp_systolic', 'bp_diastolic',
+]);
 
 /**
  * Plausible glucometer output, not a clinical range.
@@ -669,6 +688,11 @@ export const SELF_PLAUSIBLE: Record<string, { min: number; max: number }> = {
   fbs: { min: 20, max: 600 },
   ppbs_meal1: { min: 20, max: 600 },
   ppbs_meal2: { min: 20, max: 600 },
+  // A home BP monitor reads roughly these; outside is a typo, not a crisis.
+  // Note the ranges are wide enough to accept a genuinely alarming reading -
+  // refusing 190 would block exactly the one that matters most.
+  bp_systolic: { min: 50, max: 300 },
+  bp_diastolic: { min: 30, max: 200 },
 };
 
 export interface CreateLabIn {

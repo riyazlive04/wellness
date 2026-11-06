@@ -16,6 +16,7 @@
 
 export type LabPanel =
   | 'glycaemic'
+  | 'vitals'
   | 'lipid'
   | 'thyroid'
   | 'vitamins'
@@ -27,6 +28,7 @@ export type LabPanel =
 
 export const LAB_PANELS: Array<{ code: LabPanel; label: string }> = [
   { code: 'glycaemic', label: 'Blood sugar' },
+  { code: 'vitals', label: 'Blood pressure' },
   { code: 'lipid', label: 'Lipid profile' },
   { code: 'thyroid', label: 'Thyroid profile' },
   { code: 'vitamins', label: 'Vitamins & minerals' },
@@ -80,6 +82,18 @@ export const LAB_MARKERS: LabMarker[] = [
     code: 'ppbs_meal2', label: 'Post-meal sugar - after 2nd meal', panel: 'glycaemic', unit: 'mg/dL',
     fallbackRef: { low: null, high: 140 }, higherIsWorse: true,
     aliases: ['pp after 2nd meal', 'pp post 2', 'ppbs 2', 'post meal 2', 'pp lunch', 'ppbs lunch'],
+  },
+  // Blood pressure. Two markers rather than one "128/82" string: text cannot
+  // be plotted or banded, and each number has its own cut-offs.
+  {
+    code: 'bp_systolic', label: 'Blood pressure - systolic', panel: 'vitals', unit: 'mmHg',
+    fallbackRef: { low: 90, high: 120 }, higherIsWorse: true,
+    aliases: ['systolic', 'systolic bp', 'bp systolic', 'sbp'],
+  },
+  {
+    code: 'bp_diastolic', label: 'Blood pressure - diastolic', panel: 'vitals', unit: 'mmHg',
+    fallbackRef: { low: 60, high: 80 }, higherIsWorse: true,
+    aliases: ['diastolic', 'diastolic bp', 'bp diastolic', 'dbp'],
   },
   {
     code: 'hba1c', label: 'HbA1c', panel: 'glycaemic', unit: '%',

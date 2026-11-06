@@ -11,7 +11,7 @@ import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { Audit } from '../admin/audit/audit.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
-import { LabsService } from './labs.service';
+import { LabsService, SELF_LOGGABLE } from './labs.service';
 import { LAB_MARKERS, LAB_PANELS } from './lab-markers';
 
 class CreateLabDto {
@@ -44,10 +44,13 @@ class UpdateLabDto {
 
 /** One self-measured reading: which marker, and the number off the meter. */
 class SelfReadingDto {
-  @IsIn(['fbs', 'ppbs_meal1', 'ppbs_meal2'], {
+  // Reads the service's allowlist rather than repeating it: these two lists
+  // had already drifted apart once, and a DTO that silently rejects a marker
+  // the service accepts is invisible until a client hits it.
+  @IsIn([...SELF_LOGGABLE], {
     // The default message prints the raw allowlist at a client, who has no
-    // idea what 'ppbs_meal1' is. The UI only ever sends these three, so
-    // reaching this means something is wrong rather than mistyped.
+    // idea what 'ppbs_meal1' is. Reaching this means something is wrong
+    // rather than mistyped.
     message: 'That is not a reading you can log yourself.',
   })
   markerCode!: string;

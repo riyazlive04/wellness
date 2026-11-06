@@ -9,8 +9,10 @@ import { SELF_LOGGABLE, SELF_PLAUSIBLE } from './labs.service';
  * rules about what a CLIENT may write are what matter most here.
  */
 describe('what a client may log themselves', () => {
-  it('allows exactly the readings a home glucometer produces', () => {
-    expect([...SELF_LOGGABLE].sort()).toEqual(['fbs', 'ppbs_meal1', 'ppbs_meal2']);
+  it('allows exactly the readings home equipment produces', () => {
+    expect([...SELF_LOGGABLE].sort()).toEqual([
+      'bp_diastolic', 'bp_systolic', 'fbs', 'ppbs_meal1', 'ppbs_meal2',
+    ]);
   });
 
   it('refuses markers that can only come off a lab report', () => {
@@ -71,14 +73,19 @@ describe('the two post-meal markers', () => {
     expect(m1!.code).not.toBe(m2!.code);
   });
 
+  // These looped over SELF_LOGGABLE until blood pressure joined it. Scoped to
+  // the sugar markers now: BP is mmHg in its own panel, and the point of the
+  // assertions is that one CHART's markers share a panel and an axis unit.
+  const SUGAR = ['fbs', 'ppbs_meal1', 'ppbs_meal2'];
+
   it('sit in the glycaemic panel beside fasting sugar', () => {
-    for (const code of SELF_LOGGABLE) {
+    for (const code of SUGAR) {
       expect(markerByCode(code)!.panel).toBe('glycaemic');
     }
   });
 
   it('carry mg/dL, so a chart axis needs no guesswork', () => {
-    for (const code of SELF_LOGGABLE) {
+    for (const code of SUGAR) {
       expect(markerByCode(code)!.unit).toBe('mg/dL');
     }
   });
@@ -140,5 +147,60 @@ describe('the reference ranges the chart colours come from', () => {
     // would mislabel one of the two.
     expect(band('fbs', 130)).toBe('high');
     expect(band('ppbs_meal1', 130)).toBe('normal');
+  });
+});
+
+/**
+ * Blood pressure, added 2026-11-06.
+ *
+ * Two markers rather than one "128/82" string, because text cannot be plotted
+ * or banded. The pairing rules below are the ones that stop half a reading,
+ * or a reversed one, reaching a practitioner's chart.
+ */
+describe('blood pressure', () => {
+  it('is two separate markers in their own panel', () => {
+    for (const code of ['bp_systolic', 'bp_diastolic']) {
+      const m = markerByCode(code);
+      expect(m).toBeDefined();
+      expect(m!.panel).toBe('vitals');
+      expect(m!.unit).toBe('mmHg');
+    }
+  });
+
+  it('can be logged by the client, like a glucometer reading', () => {
+    expect(SELF_LOGGABLE.has('bp_systolic')).toBe(true);
+    expect(SELF_LOGGABLE.has('bp_diastolic')).toBe(true);
+  });
+
+  it('accepts an alarming reading but refuses a typo', () => {
+    const ok = (code: string, v: number) => {
+      const l = SELF_PLAUSIBLE[code];
+      return v >= l.min && v <= l.max;
+    };
+    // Hypertensive crisis territory. Refusing it would block the reading that
+    // most needs recording.
+    expect(ok('bp_systolic', 190)).toBe(true);
+    expect(ok('bp_diastolic', 120)).toBe(true);
+    expect(ok('bp_systolic', 118)).toBe(true);
+    // A systolic of 1280 is a slipped keystroke, and one of those flattens
+    // every other point on the chart.
+    expect(ok('bp_systolic', 1280)).toBe(false);
+    expect(ok('bp_diastolic', 800)).toBe(false);
+  });
+
+  it('bands the normal range at 120/80', () => {
+    expect(markerByCode('bp_systolic')!.fallbackRef).toEqual({ low: 90, high: 120 });
+    expect(markerByCode('bp_diastolic')!.fallbackRef).toEqual({ low: 60, high: 80 });
+  });
+
+  it('does not collide with an existing marker alias', () => {
+    // A lab report line reading "systolic" must not resolve to something else.
+    const bp = new Set(['bp_systolic', 'bp_diastolic']);
+    for (const m of LAB_MARKERS) {
+      if (bp.has(m.code)) continue;
+      for (const a of m.aliases ?? []) {
+        expect(['systolic', 'diastolic', 'sbp', 'dbp']).not.toContain(a.toLowerCase());
+      }
+    }
   });
 });
