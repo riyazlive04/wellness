@@ -1,4 +1,8 @@
 import { useMemo, useState } from 'react';
+import {
+  ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, Tooltip,
+  CartesianGrid, LabelList,
+} from 'recharts';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -86,9 +90,23 @@ export default function OwnerClientWellness() {
 // ─── Tabs ────────────────────────────────────────────────────────────
 
 function MealsTab({ clientId }: { clientId: string }) {
+  // "From when the client started" has no stored start date - only
+  // created_at, which is when the RECORD was made, not when the programme
+  // began, and meals are routinely backdated before it. So the range is a
+  // choice, defaulting to everything, and the heading names the first day
+  // that actually has data.
+  const [days, setDays] = useState(365);
+
   const trendsQ = useQuery({
-    queryKey: ['workspaces', 'clients', clientId, 'trends'],
-    queryFn: () => clientsApi.clientWorkspaceNutritionTrends(clientId, 14),
+    queryKey: ['workspaces', 'clients', clientId, 'trends', days],
+    queryFn: () => clientsApi.clientWorkspaceNutritionTrends(clientId, days),
+    retry: 1,
+  });
+
+  // Weight lives with the daily habits, not with meals. Joined by date below.
+  const habitsQ = useQuery({
+    queryKey: ['workspaces', 'clients', clientId, 'habits', days],
+    queryFn: () => clientsApi.clientWorkspaceHabits(clientId, days),
     retry: 1,
   });
   const mealsQ = useQuery({
@@ -106,8 +124,31 @@ function MealsTab({ clientId }: { clientId: string }) {
       avgKcalPerDay: Math.round(sumK / t.length),
       totalMeals: sumM,
       days: t.length,
+      firstDay: t[t.length - 1]?.date ?? null,
     };
   }, [trendsQ.data]);
+
+  /**
+   * One row per day, oldest first, with weight joined on.
+   *
+   * Only days with a meal become rows: a weigh-in on a day nobody logged food
+   * would otherwise draw a calorie bar of zero, which reads as "ate nothing"
+   * rather than "did not log".
+   */
+  const dayRows = useMemo(() => {
+    const weightByDate = new Map<string, number>();
+    for (const h of habitsQ.data ?? []) {
+      if (h.weight_kg != null && h.weight_kg > 0) weightByDate.set(h.date, h.weight_kg);
+    }
+    return [...(trendsQ.data ?? [])]
+      .reverse()
+      .map((r) => ({
+        date: r.date,
+        total_kcal: Math.round(r.total_kcal),
+        total_protein_g: Math.round(r.total_protein_g),
+        weight_kg: weightByDate.get(r.date) ?? null,
+      }));
+  }, [trendsQ.data, habitsQ.data]);
 
   return (
     <div className="space-y-5">
@@ -123,13 +164,55 @@ function MealsTab({ clientId }: { clientId: string }) {
         } unit="" />
       </div>
 
-      {/* 14-day kcal bars */}
-      {(trendsQ.data?.length ?? 0) > 0 && (
+      {/* Calories and weight on one timeline, then protein below it. */}
+      {dayRows.length > 0 && (
+        <Glass className="p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+              Calories &amp; weight · per day
+              {trendTotals?.firstDay && (
+                <span className="ml-2 normal-case tracking-normal text-foreground/40">
+                  from {dayTick(trendTotals.firstDay)}
+                </span>
+              )}
+            </div>
+            <div className="flex gap-1">
+              {([[30, '30d'], [90, '3m'], [365, 'All']] as const).map(([d, lbl]) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDays(d)}
+                  className={cn(
+                    'rounded-full border px-2.5 py-0.5 text-[11px] transition-colors',
+                    days === d
+                      ? 'border-teal-500/50 bg-teal-500/10 text-teal-700 dark:text-teal-300'
+                      : 'border-foreground/10 text-foreground/55 hover:bg-foreground/[0.04]',
+                  )}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          </div>
+          <CaloriesWeightChart rows={dayRows} />
+          <div className="mt-1 flex flex-wrap items-center gap-3 text-[10px] text-foreground/45">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-sm bg-[#0F766E]" /> Calories (kcal)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-0.5 w-3 rounded bg-[#C2410C]" /> Weight (kg)
+            </span>
+            <span>A break in the weight line is a day with no weigh-in, not a missing value.</span>
+          </div>
+        </Glass>
+      )}
+
+      {dayRows.some((r) => r.total_protein_g > 0) && (
         <Glass className="p-4">
           <div className="mb-3 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
-            Calories · last 14 days
+            Protein · per day
           </div>
-          <KcalBarChart data={trendsQ.data ?? []} />
+          <ProteinChart rows={dayRows} />
         </Glass>
       )}
 
@@ -471,26 +554,129 @@ function StatTile({ label, value, unit }: { label: string; value: number; unit: 
   );
 }
 
-function KcalBarChart({ data }: { data: Array<{ date: string; total_kcal: number }> }) {
-  // Newest-first → oldest-left when reversed
-  const ordered = useMemo(() => [...data].reverse(), [data]);
-  const max = Math.max(...ordered.map((d) => d.total_kcal), 1);
+interface DayRow {
+  date: string;
+  total_kcal: number;
+  total_protein_g: number;
+  weight_kg: number | null;
+}
+
+/** Short tick label: 5 Nov. The year is in the range heading above. */
+function dayTick(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', {
+    day: 'numeric', month: 'short', timeZone: 'UTC',
+  });
+}
+
+/**
+ * Calories and weight on one chart, per day.
+ *
+ * A practice asked to see "if taking certain calorie levels led to weight
+ * loss or gain", which only reads if both sit on the same timeline. They need
+ * SEPARATE axes: calories run 1200-2500 and weight 60-90, so on one scale the
+ * weight line flattens onto the floor and answers nothing.
+ *
+ * Days with a meal but no weigh-in are ordinary - clients log food daily and
+ * step on the scale weekly - so the weight line breaks across those rather
+ * than inventing a value. connectNulls stays false for exactly that reason.
+ *
+ * Values are printed on the points, not hidden behind a hover: this is a
+ * chart a coach reads at a glance, and the same request was made of the blood
+ * sugar charts.
+ */
+function CaloriesWeightChart({ rows }: { rows: DayRow[] }) {
+  // Cap the label COUNT, not the step: a fixed "every 3rd" still collides
+  // once the range is long enough. Learned on the sugar charts.
+  const every = Math.max(1, Math.ceil(rows.length / 10));
+  const label = (v: number, i: number) => (i % every === 0 && v > 0 ? Math.round(v) : '');
+
+  const anyWeight = rows.some((r) => r.weight_kg != null);
+
   return (
-    <div className="flex items-end gap-1 h-24">
-      {ordered.map((d, i) => {
-        const h = Math.max(4, Math.round((d.total_kcal / max) * 96));
-        return (
-          <div key={i} className="flex flex-1 flex-col items-center gap-1" title={`${d.date}: ${Math.round(d.total_kcal)} kcal`}>
-            <div
-              className="w-full rounded-t bg-gradient-to-t from-teal-500/40 to-blue-500/60"
-              style={{ height: `${h}px` }}
+    <div className="h-56 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={rows} margin={{ top: 18, right: 8, bottom: 2, left: -14 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-foreground/10" />
+          <XAxis
+            dataKey="date"
+            tickFormatter={dayTick}
+            tick={{ fontSize: 10 }}
+            minTickGap={22}
+            stroke="currentColor"
+            className="text-foreground/40"
+          />
+          <YAxis
+            yAxisId="kcal"
+            tick={{ fontSize: 10 }}
+            stroke="currentColor"
+            className="text-foreground/40"
+          />
+          {anyWeight && (
+            <YAxis
+              yAxisId="kg"
+              orientation="right"
+              domain={['dataMin - 2', 'dataMax + 2']}
+              tick={{ fontSize: 10 }}
+              stroke="currentColor"
+              className="text-foreground/40"
+              width={34}
             />
-            <div className="text-[8px] text-foreground/45 tabular-nums">
-              {new Date(d.date).getDate()}
-            </div>
-          </div>
-        );
-      })}
+          )}
+          <Tooltip
+            contentStyle={{ fontSize: 11, borderRadius: 10 }}
+            labelFormatter={(d: string) => dayTick(d)}
+            formatter={(v: number, name: string) =>
+              (name === 'weight_kg' ? [`${v} kg`, 'Weight'] : [`${Math.round(v)} kcal`, 'Calories'])}
+          />
+          <Bar yAxisId="kcal" dataKey="total_kcal" name="total_kcal" fill="#0F766E" fillOpacity={0.55} radius={[3, 3, 0, 0]}>
+            <LabelList dataKey="total_kcal" position="top" fontSize={9} fill="currentColor"
+              className="text-foreground/55" formatter={label} />
+          </Bar>
+          {anyWeight && (
+            <Line
+              yAxisId="kg"
+              type="monotone"
+              dataKey="weight_kg"
+              name="weight_kg"
+              stroke="#C2410C"
+              strokeWidth={2}
+              dot={{ r: 2.5 }}
+              // A client weighs weekly and eats daily: the gap is the truth.
+              connectNulls={false}
+            >
+              <LabelList dataKey="weight_kg" position="top" fontSize={9} fill="#C2410C" formatter={label} />
+            </Line>
+          )}
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Protein per day. Its own chart: grams share no axis with calories. */
+function ProteinChart({ rows }: { rows: DayRow[] }) {
+  const every = Math.max(1, Math.ceil(rows.length / 10));
+  const label = (v: number, i: number) => (i % every === 0 && v > 0 ? Math.round(v) : '');
+
+  return (
+    <div className="h-44 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={rows} margin={{ top: 18, right: 8, bottom: 2, left: -14 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-foreground/10" />
+          <XAxis dataKey="date" tickFormatter={dayTick} tick={{ fontSize: 10 }} minTickGap={22}
+            stroke="currentColor" className="text-foreground/40" />
+          <YAxis tick={{ fontSize: 10 }} stroke="currentColor" className="text-foreground/40" />
+          <Tooltip
+            contentStyle={{ fontSize: 11, borderRadius: 10 }}
+            labelFormatter={(d: string) => dayTick(d)}
+            formatter={(v: number) => [`${Math.round(v)} g`, 'Protein']}
+          />
+          <Bar dataKey="total_protein_g" fill="#7E22CE" fillOpacity={0.55} radius={[3, 3, 0, 0]}>
+            <LabelList dataKey="total_protein_g" position="top" fontSize={9} fill="currentColor"
+              className="text-foreground/55" formatter={label} />
+          </Bar>
+        </ComposedChart>
+      </ResponsiveContainer>
     </div>
   );
 }

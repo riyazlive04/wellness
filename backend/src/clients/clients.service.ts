@@ -4106,7 +4106,11 @@ export class ClientsService {
     meals_count: number;
   }>> {
     await this.assertClientInWorkspace(workspaceId, clientId);
-    const d = clamp(days, 1, 90);
+    // 365, matching workspaceClientHabits. A practice asked to see calories
+    // per day "from when the client started", and 90 silently truncated
+    // anyone on a programme longer than three months - the chart simply
+    // began part-way through with no sign anything was missing.
+    const d = clamp(days, 1, 365);
     // Reads frozen snapshots — no recalculation. If snapshot is missing,
     // falls back to the legacy kcal column so historical data still totals.
     return this.prisma.$queryRawUnsafe(
