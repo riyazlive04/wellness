@@ -13,7 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { SugarChart } from '@/modules/workspace/labs/SugarChart';
 import { SugarLogCard } from '@/modules/workspace/labs/SugarLogCard';
-import { isSugarMarker } from '@/modules/workspace/labs/sugarBands';
+import { isSugarMarker, BP_MARKERS } from '@/modules/workspace/labs/sugarBands';
 
 /**
  * My lab results — read-only.
@@ -33,6 +33,13 @@ export default function ClientLabs() {
   const hasSugar = useMemo(
     () => (history?.series ?? []).some(
       (s) => isSugarMarker(s.markerCode) && s.points.some((p) => p.value != null)),
+    [history],
+  );
+
+  const hasBp = useMemo(
+    () => (history?.series ?? []).some(
+      (s) => (BP_MARKERS as readonly string[]).includes(s.markerCode)
+        && s.points.some((p) => p.value != null)),
     [history],
   );
 
@@ -68,6 +75,19 @@ export default function ClientLabs() {
           </motion.div>
         )}
 
+        {/* Blood pressure, same card with a different marker set. Both
+            numbers or neither - the server refuses half a reading, because a
+            systolic without a diastolic is not a blood pressure. */}
+        {!q.isLoading && (
+          <motion.div variants={fadeUp}>
+            <SugarLogCard
+              markers={BP_MARKERS}
+              title="Today's blood pressure"
+              hint="Enter both numbers from your monitor."
+            />
+          </motion.div>
+        )}
+
         {hasSugar && history && (
           <motion.div variants={fadeUp}>
             <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
@@ -75,6 +95,17 @@ export default function ClientLabs() {
                 My blood sugar trend
               </div>
               <SugarChart history={history} />
+            </Glass>
+          </motion.div>
+        )}
+
+        {hasBp && history && (
+          <motion.div variants={fadeUp}>
+            <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
+              <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-foreground/50">
+                My blood pressure trend
+              </div>
+              <SugarChart history={history} markers={BP_MARKERS} />
             </Glass>
           </motion.div>
         )}

@@ -8,7 +8,8 @@ import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { myLabsApi, type LabHistory } from '@/modules/workspace/api/labs';
 import {
-  BAND_CLASS, BAND_LABEL, SUGAR_LABEL, SUGAR_MARKERS, sugarBand, type SugarMarker,
+  BAND_CLASS, BAND_LABEL, SUGAR_LABEL, SUGAR_MARKERS, sugarBand,
+  type TrackedMarker,
 } from './sugarBands';
 
 /** Today in the browser's own date, as YYYY-MM-DD for a date input. */
@@ -29,12 +30,24 @@ function todayISO(): string {
  * logging: immediate meaning, not a number filed away for the next
  * consultation. It is worded as a range, never as a diagnosis.
  */
-export function SugarLogCard({ onLogged }: { onLogged?: (h: LabHistory) => void }) {
+export function SugarLogCard({
+  onLogged,
+  // Defaults to sugar so the existing call site is unchanged; blood pressure
+  // passes BP_MARKERS. The card is otherwise marker-agnostic.
+  markers = SUGAR_MARKERS,
+  title = "Today's blood sugar",
+  hint = 'Fill in what you tested. Leave the rest blank.',
+}: {
+  onLogged?: (h: LabHistory) => void;
+  markers?: readonly TrackedMarker[];
+  title?: string;
+  hint?: string;
+}) {
   const qc = useQueryClient();
   const [date, setDate] = useState(todayISO());
   const [values, setValues] = useState<Record<string, string>>({});
 
-  const entered = SUGAR_MARKERS
+  const entered = markers
     .map((code) => ({ code, value: Number(values[code]) }))
     .filter((r) => values[r.code]?.trim() && Number.isFinite(r.value) && r.value > 0);
 
@@ -59,10 +72,8 @@ export function SugarLogCard({ onLogged }: { onLogged?: (h: LabHistory) => void 
           <Droplet className="h-3.5 w-3.5" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold">Today's blood sugar</div>
-          <div className="text-[11px] text-foreground/50">
-            Fill in what you tested. Leave the rest blank.
-          </div>
+          <div className="text-sm font-semibold">{title}</div>
+          <div className="text-[11px] text-foreground/50">{hint}</div>
         </div>
         <input
           type="date"
@@ -75,7 +86,7 @@ export function SugarLogCard({ onLogged }: { onLogged?: (h: LabHistory) => void 
       </div>
 
       <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
-        {SUGAR_MARKERS.map((code) => (
+        {markers.map((code) => (
           <Field
             key={code}
             code={code}
@@ -103,7 +114,7 @@ export function SugarLogCard({ onLogged }: { onLogged?: (h: LabHistory) => void 
 function Field({
   code, value, onChange,
 }: {
-  code: SugarMarker; value: string; onChange: (v: string) => void;
+  code: TrackedMarker; value: string; onChange: (v: string) => void;
 }) {
   const n = Number(value);
   // Only band a number a meter could have produced, so a half-typed "1" does

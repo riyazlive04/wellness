@@ -8,10 +8,10 @@ import { cn } from '@/lib/utils';
 import type { LabHistory } from '@/modules/workspace/api/labs';
 import {
   BAND_CLASS, BAND_FILL, BAND_LABEL, SERIES_COLOR, SPIKE_NOTE, SUGAR_LABEL, SUGAR_MARKERS,
-  SUGAR_REFERENCE_NOTE, TREND_CLASS, TREND_COLOR, TREND_LABEL, annotateSugarTrend, bandsFor,
+  MARKER_UNIT, referenceNoteFor, TREND_CLASS, TREND_COLOR, TREND_LABEL, annotateSugarTrend, bandsFor,
   sugarBand, sugarTrendReason, sugarWeek, sugarWeekStarts, sugarMonths, monthLabel,
   weekRangeLabel, weekStart,
-  type SugarMarker, type SugarTrendPoint, type SugarWeekDay,
+  type SugarMarker, type TrackedMarker, type SugarTrendPoint, type SugarWeekDay,
 } from './sugarBands';
 
 /**
@@ -39,13 +39,27 @@ import {
  * but steady). Every ring is also spelled out in words in the tooltip and in
  * the list under the chart, so it is never colour alone.
  */
-export function SugarChart({ history, className }: { history: LabHistory; className?: string }) {
-  const [view, setView] = useState<'all' | SugarMarker>('all');
+export function SugarChart({
+  history,
+  className,
+  // Which markers this chart draws. Defaults to sugar so the existing call
+  // sites are unchanged; blood pressure passes BP_MARKERS. They cannot share
+  // one chart - mmHg and mg/dL on one y-axis is meaningless - but every other
+  // part of this component is marker-agnostic.
+  markers = SUGAR_MARKERS,
+  title,
+}: {
+  history: LabHistory;
+  className?: string;
+  markers?: readonly TrackedMarker[];
+  title?: string;
+}) {
+  const [view, setView] = useState<'all' | TrackedMarker>('all');
   const [period, setPeriod] = useState<'week' | 'month' | 'allTime'>('week');
 
   /** The sugar series that actually have readings, in a fixed order. */
   const available = useMemo(
-    () => SUGAR_MARKERS.filter((code) =>
+    () => markers.filter((code) =>
       history.series.some((s) => s.markerCode === code && s.points.some((p) => p.value != null))),
     [history.series],
   );
@@ -58,8 +72,8 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
    * baseline at the week boundary.
    */
   const trend = useMemo(() => {
-    const out = {} as Record<SugarMarker, SugarTrendPoint[]>;
-    for (const code of SUGAR_MARKERS) {
+    const out = {} as Record<TrackedMarker, SugarTrendPoint[]>;
+    for (const code of markers) {
       const series = history.series.find((s) => s.markerCode === code);
       out[code] = annotateSugarTrend(
         (series?.points ?? [])
@@ -74,7 +88,7 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
   /** Weeks that have at least one reading of any marker, oldest first. */
   const weeks = useMemo(() => {
     const set = new Set<string>();
-    for (const code of SUGAR_MARKERS) for (const w of sugarWeekStarts(trend[code])) set.add(w);
+    for (const code of markers) for (const w of sugarWeekStarts(trend[code])) set.add(w);
     return [...set].sort();
   }, [trend]);
 
@@ -87,7 +101,7 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
   /** Months that have at least one reading, oldest first. */
   const months = useMemo(() => {
     const set = new Set<string>();
-    for (const code of SUGAR_MARKERS) for (const m of sugarMonths(trend[code])) set.add(m);
+    for (const code of markers) for (const m of sugarMonths(trend[code])) set.add(m);
     return [...set].sort();
   }, [trend]);
 
@@ -107,15 +121,15 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
   const rows = useMemo(() => {
     if (period === 'week') {
       if (!start) return [];
-      const perMarker = {} as Record<SugarMarker, SugarWeekDay[]>;
-      for (const code of SUGAR_MARKERS) perMarker[code] = sugarWeek(trend[code], start);
-      return perMarker.fbs.map((d, i) => {
+      const perMarker = {} as Record<TrackedMarker, SugarWeekDay[]>;
+      for (const code of markers) perMarker[code] = sugarWeek(trend[code], start);
+      return perMarker[markers[0]].map((d, i) => {
         const row: ChartRow = {
           date: d.takenOn,
           label: `Day ${d.day}`,
           weekday: d.weekday,
         };
-        for (const code of SUGAR_MARKERS) {
+        for (const code of markers) {
           const day = perMarker[code][i];
           if (day.value != null) {
             row[code] = day.value;
@@ -129,7 +143,7 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
     }
 
     const byDate = new Map<string, ChartRow>();
-    for (const code of SUGAR_MARKERS) {
+    for (const code of markers) {
       for (const p of trend[code]) {
         // Month mode is all-time narrowed to one month; flags are still
         // computed over the full history, so a 1st-of-the-month reading keeps
@@ -149,7 +163,7 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
 
   if (!available.length) return null;
 
-  const shown: SugarMarker[] = view === 'all' ? available : [view];
+  const shown: TrackedMarker[] = view === 'all' ? available : [view];
 
   /**
    * Whether to print each reading on the chart, and how often.
@@ -168,7 +182,7 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
   );
   // Bands only make sense against a single marker's thresholds.
   const single = view === 'all' ? null : view;
-  const { top, bands } = bandsFor(single ?? 'fbs', dataMax);
+  const { top, bands } = bandsFor(single ?? markers[0], dataMax);
 
   const latest = single
     ? history.series.find((s) => s.markerCode === single)?.latest
@@ -267,7 +281,7 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
             'ml-auto rounded-full border px-2 py-0.5 text-[10px] font-semibold',
             BAND_CLASS[sugarBand(single, latest.value)],
           )}>
-            {latest.value} mg/dL · {BAND_LABEL[sugarBand(single, latest.value)]}
+            {latest.value} {MARKER_UNIT[single]} · {BAND_LABEL[sugarBand(single, latest.value)]}
           </span>
         )}
       </div>
@@ -327,7 +341,7 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
                 // Band first, then the spike reason as its own clause: the two
                 // are different claims and reading them as one ("above range,
                 // +14") would collapse the distinction the ring exists for.
-                const band = `${n} mg/dL · ${BAND_LABEL[sugarBand(code, n)]}`;
+                const band = `${n} ${MARKER_UNIT[code]} · ${BAND_LABEL[sugarBand(code, n)]}`;
                 return [why ? `${band} · ${why}` : band, SUGAR_LABEL[code]];
               }}
             />
@@ -394,7 +408,7 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
                 {TREND_LABEL[f.flag]}
               </span>
               <span className="text-foreground/60">
-                {SUGAR_LABEL[f.code]} {f.value} mg/dL on{' '}
+                {SUGAR_LABEL[f.code]} {f.value} {MARKER_UNIT[f.code]} on{' '}
                 {new Date(f.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                 {' — '}{f.why}
               </span>
@@ -404,7 +418,7 @@ export function SugarChart({ history, className }: { history: LabHistory; classN
       )}
 
       <p className="text-[10px] leading-relaxed text-foreground/50">
-        {SUGAR_REFERENCE_NOTE}
+        {referenceNoteFor(markers)}
       </p>
       <p className="text-[10px] leading-relaxed text-foreground/50">
         {SPIKE_NOTE}

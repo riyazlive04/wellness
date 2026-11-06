@@ -33,7 +33,19 @@ a dedicated BP table (duplicates the labs module for no gain).
 - [x] Client can self-log them
 - [x] 190/120 accepted; 1280 refused
 - [x] Half a reading refused; reversed reading refused
-- [ ] Entry card and chart (frontend, next)
+- [x] Entry card and chart, both sides
+
+## Frontend
+No new components. SugarChart and SugarLogCard take a `markers` prop
+defaulting to the sugar set, so BP reuses the bands, spike detection, weekly
+and monthly views and the entry card. Each gets its OWN chart - mmHg and
+mg/dL on one y-axis would draw a diastolic of 80 level with a hypo.
+
+Three things had to stop being sugar-specific along the way:
+- the spike margin (a glucose 10 mg/dL flagged ordinary BP variation)
+- four hardcoded "mg/dL" strings and a `'fbs'` y-axis fallback
+- the reference-note disclaimer, now chosen by marker set
 
 ## Status
-Backend done. 68 labs tests, 781 total, all pass.
+Done on web. 781 backend tests pass; frontend typecheck (tsc --build) clean.
+Mobile BP not built.

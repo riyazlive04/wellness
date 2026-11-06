@@ -175,6 +175,17 @@ export const SUGAR_REFERENCE_NOTE =
   + 'They are a guide for discussion with your practitioner, not a diagnosis, and your own '
   + 'targets may differ.';
 
+/** The same disclaimer, worded for blood pressure. */
+export const BP_REFERENCE_NOTE =
+  'Bands follow general adult reference values (normal under 120/80, raised to 130/80, '
+  + 'high from 140/90 mmHg). They are a guide for discussion with your practitioner, not a '
+  + 'diagnosis, and your own targets may differ.';
+
+/** Whichever disclaimer belongs under a chart of these markers. */
+export function referenceNoteFor(markers: readonly TrackedMarker[]): string {
+  return markers.some((m) => m.startsWith('bp_')) ? BP_REFERENCE_NOTE : SUGAR_REFERENCE_NOTE;
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Spike detection - a SECOND, independent signal from the bands above.
  *

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Activity, AlertTriangle, ArrowDown, ArrowUp, ChevronDown, Droplet, FlaskConical,
+  Activity, AlertTriangle, ArrowDown, ArrowUp, ChevronDown, Droplet, FlaskConical, HeartPulse,
   Loader2, Minus, Pencil, Plus, Trash2, FileInput, X, Check,
 } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea } from 'recharts';
@@ -14,7 +14,7 @@ import {
   type LabHistory, type LabSeries, type LabPoint, type ImportableCard,
 } from '@/modules/workspace/api/labs';
 import { SugarChart } from './SugarChart';
-import { isSugarMarker } from './sugarBands';
+import { isSugarMarker, BP_MARKERS } from './sugarBands';
 
 /**
  * Labs tab — the client's blood work as trends rather than paperwork.
@@ -59,6 +59,13 @@ export function LabsTab({ clientId }: { clientId: string }) {
   const hasSugar = useMemo(
     () => history.series.some(
       (s) => isSugarMarker(s.markerCode) && s.points.some((p) => p.value != null)),
+    [history.series],
+  );
+
+  const hasBp = useMemo(
+    () => history.series.some(
+      (s) => (BP_MARKERS as readonly string[]).includes(s.markerCode)
+        && s.points.some((p) => p.value != null)),
     [history.series],
   );
 
@@ -114,6 +121,20 @@ export function LabsTab({ clientId }: { clientId: string }) {
             <span className="text-[11px] text-foreground/45">logged by the client</span>
           </div>
           <SugarChart history={history} />
+        </Glass>
+      )}
+
+      {/* Blood pressure, its own chart rather than another line on the sugar
+          one: mmHg and mg/dL cannot share a y-axis. Hidden until a client
+          has logged one, as the sugar card is. */}
+      {hasBp && (
+        <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-2">
+            <HeartPulse className="h-4 w-4 text-red-600" />
+            <span className="text-sm font-bold">Blood pressure</span>
+            <span className="text-[11px] text-foreground/45">logged by the client</span>
+          </div>
+          <SugarChart history={history} markers={BP_MARKERS} />
         </Glass>
       )}
 
