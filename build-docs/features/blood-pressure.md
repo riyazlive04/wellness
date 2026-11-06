@@ -46,6 +46,16 @@ Three things had to stop being sugar-specific along the way:
 - four hardcoded "mg/dL" strings and a `'fbs'` y-axis fallback
 - the reference-note disclaimer, now chosen by marker set
 
+## Mobile
+The 662-line sugar screen became `ReadingsScreen`, taking a marker set and
+four strings. `blood-sugar.tsx` keeps the default export (route unchanged);
+`blood-pressure.tsx` is a 20-line wrapper. Separate screens, not one with a
+toggle, for the same axis reason as web.
+
+`sugar-bands.ts` was 95 lines behind its web twin. Ported: BP markers, bands,
+per-marker spike margins, MARKER_UNIT and the BP disclaimer. Verified the two
+copies agree on all four spike constants and produce identical band and flag
+output for the same input.
+
 ## Status
-Done on web. 781 backend tests pass; frontend typecheck (tsc --build) clean.
-Mobile BP not built.
+Done on web and mobile. 781 backend tests pass; both typechecks clean.
