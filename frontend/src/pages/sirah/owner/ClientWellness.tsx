@@ -155,8 +155,12 @@ function MealsTab({ clientId }: { clientId: string }) {
       {/* Trend tiles */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Days logged" value={trendTotals?.days ?? 0} unit="d" />
-        <StatTile label="Meals (14d)" value={trendTotals?.totalMeals ?? 0} unit="" />
-        <StatTile label="Avg kcal/day" value={trendTotals?.avgKcalPerDay ?? 0} unit="kcal" />
+        {/* "Meals (14d)" lied once the range became selectable, and the
+            average is the thing the brief asked to replace - it is kept only
+            as a one-line summary beside the per-day chart below, not as the
+            headline number. */}
+        <StatTile label="Meals logged" value={trendTotals?.totalMeals ?? 0} unit="" />
+        <StatTile label="Typical day" value={trendTotals?.avgKcalPerDay ?? 0} unit="kcal" />
         <StatTile label="With nutrition" value={
           (mealsQ.data ?? []).filter(
             (m) => m.resolution_status === 'resolved' || m.resolution_status === 'ai_estimated',
