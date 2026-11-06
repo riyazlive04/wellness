@@ -29,7 +29,7 @@ import { labsApi } from '@/lib/labs-api';
 import {
   BAND_COLOR, BAND_LABEL, SPIKE_NOTE, SUGAR_LABEL, SUGAR_MARKERS, SUGAR_REFERENCE_NOTE,
   SUGAR_SHORT, TREND_COLOR, TREND_LABEL, annotateSugarTrend, sugarBand, sugarTrendReason,
-  sugarWeek, sugarWeekStarts, weekRangeLabel, weekStart,
+  sugarWeek, sugarWeekStarts, sugarMonths, monthLabel, weekRangeLabel, weekStart,
   type SugarMarker, type SugarTrendPoint, type SugarWeekDay,
 } from '@/lib/sugar-bands';
 import { radius, spacing } from '@/lib/theme';
@@ -64,11 +64,12 @@ export default function BloodSugar() {
   // 'week' is the default: a consultation talks in weeks, and the brief asks
   // for Day 1..Day 7. 'all' keeps the long continuous trend, which answers a
   // question a single week cannot ("am I better than three months ago?").
-  const [period, setPeriod] = useState<'week' | 'all'>('week');
+  const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
   // An offset from the newest week with data: 0 is the latest, -1 the one
   // before. Stored as an offset rather than a date so it survives new readings
   // arriving while the screen is open.
   const [weekBack, setWeekBack] = useState(0);
+  const [monthBack, setMonthBack] = useState(0);
 
   const historyQ = useQuery({
     queryKey: ['me', 'labs'],
@@ -139,6 +140,18 @@ export default function BloodSugar() {
     return [...set].sort();
   }, [trendByMarker]);
 
+  /** Months with at least one reading, oldest first. */
+  const months = useMemo(() => {
+    const set = new Set<string>();
+    for (const code of SUGAR_MARKERS) {
+      for (const m of sugarMonths(trendByMarker[code])) set.add(m);
+    }
+    return [...set].sort();
+  }, [trendByMarker]);
+
+  const monthIdx = Math.max(0, months.length - 1 + monthBack);
+  const month = months[Math.min(monthIdx, Math.max(0, months.length - 1))];
+
   // Clamped rather than validated: readings arriving can change how many weeks
   // exist, and an offset past the end should land on the oldest week, not on
   // an empty chart.
@@ -182,30 +195,62 @@ export default function BloodSugar() {
             </View>
           </View>
 
-          {/* Which day these readings are for — not when they were typed in. */}
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            {[0, -1, -2].map((off) => {
-              const d = shiftDays(todayISO(), off);
-              const active = d === date;
-              return (
-                <Pressable
-                  key={d}
-                  onPress={() => setDate(d)}
-                  style={[
-                    styles.dateChip,
-                    {
-                      backgroundColor: active
-                        ? t.colors.accent + (t.dark ? '2E' : '1A')
-                        : t.colors.surfaceStrong,
-                      borderColor: active ? t.colors.accent + '55' : t.colors.border,
-                    },
-                  ]}>
-                  <AppText variant="caption" tone={active ? 'accent' : 'muted'}>
-                    {prettyDate(d)}
-                  </AppText>
-                </Pressable>
-              );
-            })}
+          {/* Which day these readings are for — not when they were typed in.
+              Arrows step any distance back, because a client joining in
+              November needs to enter September's readings to see whether
+              anything has changed. Three chips only reached the day before
+              yesterday, which made the history impossible to enter.
+
+              Arrows rather than a native date picker: @react-native-community
+              /datetimepicker is a native module, so adding it would need a new
+              APK and this could not ship over the air. */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <Pressable
+              onPress={() => setDate(shiftDays(date, -1))}
+              hitSlop={10}
+              accessibilityLabel="Previous day"
+              style={[styles.dateChip, { borderColor: t.colors.border, backgroundColor: t.colors.surfaceStrong }]}>
+              <Ionicons name="chevron-back" size={13} color={t.colors.textMuted} />
+            </Pressable>
+
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <AppText variant="caption" tone={date === todayISO() ? 'muted' : 'accent'}>
+                {prettyDate(date)}
+              </AppText>
+            </View>
+
+            <Pressable
+              onPress={() => setDate(shiftDays(date, 1))}
+              // A reading dated tomorrow is a mis-set clock; the server
+              // refuses it, so do not let them get that far.
+              disabled={date >= todayISO()}
+              hitSlop={10}
+              accessibilityLabel="Next day"
+              style={[
+                styles.dateChip,
+                {
+                  borderColor: t.colors.border,
+                  backgroundColor: t.colors.surfaceStrong,
+                  opacity: date >= todayISO() ? 0.35 : 1,
+                },
+              ]}>
+              <Ionicons name="chevron-forward" size={13} color={t.colors.textMuted} />
+            </Pressable>
+
+            {date !== todayISO() && (
+              <Pressable
+                onPress={() => setDate(todayISO())}
+                hitSlop={10}
+                style={[
+                  styles.dateChip,
+                  {
+                    backgroundColor: t.colors.accent + (t.dark ? '2E' : '1A'),
+                    borderColor: t.colors.accent + '55',
+                  },
+                ]}>
+                <AppText variant="caption" tone="accent">Today</AppText>
+              </Pressable>
+            )}
           </View>
 
           {SUGAR_MARKERS.map((code) => {
@@ -296,7 +341,7 @@ export default function BloodSugar() {
             {/* Week vs the whole history. Both are kept: the week is how a
                 consultation talks, the full line is how progress reads. */}
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              {([['week', 'This week'], ['all', 'All readings']] as const).map(([key, label]) => {
+              {([['week', 'This week'], ['month', 'By month'], ['all', 'All readings']] as const).map(([key, label]) => {
                 const active = period === key;
                 return (
                   <Pressable
@@ -364,6 +409,45 @@ export default function BloodSugar() {
                 </Pressable>
               </View>
             ) : null}
+
+            {period === 'month' && month ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: spacing.sm,
+                }}>
+                <Pressable
+                  onPress={() => setMonthBack(monthBack - 1)}
+                  disabled={monthIdx <= 0}
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous month"
+                  style={[
+                    styles.weekArrow,
+                    { borderColor: t.colors.border, opacity: monthIdx <= 0 ? 0.3 : 1 },
+                  ]}>
+                  <Ionicons name="chevron-back" size={15} color={t.colors.textMuted} />
+                </Pressable>
+                <AppText variant="caption" tone="muted">
+                  {monthLabel(month)}
+                </AppText>
+                <Pressable
+                  onPress={() => setMonthBack(Math.min(0, monthBack + 1))}
+                  disabled={monthIdx >= months.length - 1}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next month"
+                  style={[
+                    styles.weekArrow,
+                    {
+                      borderColor: t.colors.border,
+                      opacity: monthIdx >= months.length - 1 ? 0.3 : 1,
+                    },
+                  ]}>
+                  <Ionicons name="chevron-forward" size={15} color={t.colors.textMuted} />
+                </Pressable>
+              </View>
+            ) : null}
           </View>
         ) : null}
 
@@ -378,6 +462,12 @@ export default function BloodSugar() {
             const pts = seriesByMarker[code];
             if (pts.length === 0) return null;
             const week = period === 'week' && start ? sugarWeek(trendByMarker[code], start) : null;
+            // Month mode is the all-time chart narrowed to one month. Flags
+            // were annotated over the full history, so a reading on the 1st
+            // keeps its baseline from the end of the previous month.
+            const shownPts = period === 'month' && month
+              ? pts.filter((pt) => pt.takenOn.startsWith(month))
+              : pts;
             const last = pts[pts.length - 1];
             const band = sugarBand(code, last.value);
             return (
@@ -421,7 +511,7 @@ export default function BloodSugar() {
                 {week ? (
                   <SugarWeekChart marker={code} week={week} />
                 ) : (
-                  <SugarChart marker={code} points={pts} />
+                  <SugarChart marker={code} points={shownPts} />
                 )}
 
                 {/* Which days of the week nobody logged, named. The chart's
