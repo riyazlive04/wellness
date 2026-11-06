@@ -4,7 +4,7 @@ import {
   Activity, AlertTriangle, ArrowDown, ArrowUp, ChevronDown, Droplet, FlaskConical, HeartPulse,
   Loader2, Minus, Pencil, Plus, Trash2, FileInput, X, Check,
 } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea, LabelList } from 'recharts';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -15,6 +15,7 @@ import {
 } from '@/modules/workspace/api/labs';
 import { SugarChart } from './SugarChart';
 import { isSugarMarker, BP_MARKERS } from './sugarBands';
+import { withValueLabels } from '@/modules/workspace/charts/valueLabels';
 
 /**
  * Labs tab — the client's blood work as trends rather than paperwork.
@@ -266,9 +267,15 @@ function MarkerRow({
   const range = latest ? formatRange(latest.refLow, latest.refHigh, latest.refText) : null;
 
   // A single reading is a point, not a trend — don't draw a line through it.
-  const chartData = series.points
-    .filter((p) => p.value !== null)
-    .map((p) => ({ date: p.takenOn, value: p.value as number }));
+  // Lab values vary in scale - an HbA1c of 5.6 and a cholesterol of 190 both
+  // appear here - so keep one decimal rather than rounding 5.6 to 6.
+  const chartData = withValueLabels(
+    series.points
+      .filter((p) => p.value !== null)
+      .map((p) => ({ date: p.takenOn, value: p.value as number })),
+    'value',
+    (v) => (Number.isInteger(v) ? String(v) : v.toFixed(1)),
+  );
 
   return (
     <div>
@@ -344,7 +351,10 @@ function MarkerRow({
                     labelFormatter={(d) => formatDate(String(d))}
                     formatter={(v: number) => [series.unit ? `${v} ${series.unit}` : v, series.markerLabel]}
                   />
-                  <Line type="monotone" dataKey="value" stroke="#14b8a6" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="value" stroke="#14b8a6" strokeWidth={2} dot={{ r: 3 }}>
+                    <LabelList dataKey="value__label" position="top" offset={8} fontSize={9}
+                      fill="currentColor" className="text-foreground/60" />
+                  </Line>
                 </LineChart>
               </ResponsiveContainer>
             </div>

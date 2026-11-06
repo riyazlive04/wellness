@@ -601,22 +601,23 @@ function dayTick(iso: string): string {
 function CaloriesWeightChart({ rows }: { rows: DayRow[] }) {
   // Cap the label COUNT, not the step: a fixed "every 3rd" still collides
   // once the range is long enough. Learned on the sugar charts.
-  // Which dates carry a printed value. Precomputed rather than worked out in
-  // the formatter: Recharts gives a LabelList formatter the VALUE only, with
-  // no index, so an index-based rule silently prints nothing.
+  // Thinning has to happen in the DATA, not in the formatter. Recharts calls
+  // `formatter(label)` with the value and nothing else - no index, no entry -
+  // so any rule that needs to know WHICH point this is cannot work there.
+  // Two extra fields carry the label text; LabelList just prints them.
   const every = Math.max(1, Math.ceil(rows.length / 10));
-  const labelled = new Set(rows.filter((_, i) => i % every === 0).map((r) => r.date));
-  const kcalLabel = (v: number, e: { payload?: DayRow }) =>
-    (v > 0 && e?.payload && labelled.has(e.payload.date) ? String(Math.round(v)) : '');
-  const kgLabel = (v: number, e: { payload?: DayRow }) =>
-    (v > 0 && e?.payload && labelled.has(e.payload.date) ? String(v) : '');
+  const data = rows.map((r, i) => ({
+    ...r,
+    kcalLabel: i % every === 0 && r.total_kcal > 0 ? String(Math.round(r.total_kcal)) : '',
+    kgLabel: i % every === 0 && r.weight_kg != null ? String(r.weight_kg) : '',
+  }));
 
   const anyWeight = rows.some((r) => r.weight_kg != null);
 
   return (
     <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={rows} margin={{ top: 18, right: 8, bottom: 2, left: -14 }}>
+        <ComposedChart data={data} margin={{ top: 20, right: 8, bottom: 2, left: -14 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-foreground/10" />
           <XAxis
             dataKey="date"
@@ -650,8 +651,8 @@ function CaloriesWeightChart({ rows }: { rows: DayRow[] }) {
               (name === 'weight_kg' ? [`${v} kg`, 'Weight'] : [`${Math.round(v)} kcal`, 'Calories'])}
           />
           <Bar yAxisId="kcal" dataKey="total_kcal" name="total_kcal" fill="#0F766E" fillOpacity={0.55} radius={[3, 3, 0, 0]}>
-            <LabelList dataKey="total_kcal" position="top" fontSize={9} fill="currentColor"
-              className="text-foreground/60" formatter={kcalLabel} />
+            <LabelList dataKey="kcalLabel" position="top" fontSize={9} fill="currentColor"
+              className="text-foreground/70" />
           </Bar>
           {anyWeight && (
             <Line
@@ -665,7 +666,7 @@ function CaloriesWeightChart({ rows }: { rows: DayRow[] }) {
               // A client weighs weekly and eats daily: the gap is the truth.
               connectNulls={false}
             >
-              <LabelList dataKey="weight_kg" position="top" offset={8} fontSize={9} fill="#C2410C" formatter={kgLabel} />
+              <LabelList dataKey="kgLabel" position="top" offset={9} fontSize={9} fill="#C2410C" />
             </Line>
           )}
         </ComposedChart>
@@ -677,14 +678,15 @@ function CaloriesWeightChart({ rows }: { rows: DayRow[] }) {
 /** Protein per day. Its own chart: grams share no axis with calories. */
 function ProteinChart({ rows }: { rows: DayRow[] }) {
   const every = Math.max(1, Math.ceil(rows.length / 10));
-  const labelled = new Set(rows.filter((_, i) => i % every === 0).map((r) => r.date));
-  const label = (v: number, e: { payload?: DayRow }) =>
-    (v > 0 && e?.payload && labelled.has(e.payload.date) ? String(Math.round(v)) : '');
+  const data = rows.map((r, i) => ({
+    ...r,
+    gLabel: i % every === 0 && r.total_protein_g > 0 ? String(Math.round(r.total_protein_g)) : '',
+  }));
 
   return (
     <div className="h-44 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={rows} margin={{ top: 18, right: 8, bottom: 2, left: -14 }}>
+        <ComposedChart data={data} margin={{ top: 20, right: 8, bottom: 2, left: -14 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-foreground/10" />
           <XAxis dataKey="date" tickFormatter={dayTick} tick={{ fontSize: 10 }} minTickGap={22}
             stroke="currentColor" className="text-foreground/40" />
@@ -695,8 +697,8 @@ function ProteinChart({ rows }: { rows: DayRow[] }) {
             formatter={(v: number) => [`${Math.round(v)} g`, 'Protein']}
           />
           <Bar dataKey="total_protein_g" fill="#7E22CE" fillOpacity={0.55} radius={[3, 3, 0, 0]}>
-            <LabelList dataKey="total_protein_g" position="top" fontSize={9} fill="currentColor"
-              className="text-foreground/55" formatter={label} />
+            <LabelList dataKey="gLabel" position="top" fontSize={9} fill="currentColor"
+              className="text-foreground/70" />
           </Bar>
         </ComposedChart>
       </ResponsiveContainer>

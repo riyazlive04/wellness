@@ -175,7 +175,29 @@ export function SugarChart({
    * tooltip still gives the exact value for any point.
    */
   const showValues = shown.length === 1;
-  const labelEvery = rows.length <= 10 ? 1 : rows.length <= 20 ? 2 : 3;
+  // Cap the label COUNT, not the step, so a long range thins further rather
+  // than crowding at "every 3rd".
+  const labelEvery = Math.max(1, Math.ceil(rows.length / 10));
+
+  /**
+   * Label text as a DATA field, one per series.
+   *
+   * Recharts calls `formatter(label)` with the value and nothing else - no
+   * index, no entry. An earlier version here read a third `i` argument that
+   * is never passed, so `i % labelEvery` was NaN and every label past the
+   * first ten readings silently vanished. Thinning has to happen in the data.
+   */
+  const labelled = useMemo(
+    () => rows.map((row, i) => {
+      const out: ChartRow = { ...row };
+      for (const code of shown) {
+        const v = row[code];
+        out[`${code}__label`] = i % labelEvery === 0 && typeof v === 'number' ? String(v) : '';
+      }
+      return out;
+    }),
+    [rows, shown, labelEvery],
+  );
   const dataMax = Math.max(
     0,
     ...rows.flatMap((r) => shown.map((c) => Number(r[c] ?? 0))),
@@ -288,7 +310,7 @@ export function SugarChart({
 
       <div className="h-56 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rows} margin={{ top: 6, right: 8, bottom: 2, left: -18 }}>
+          <LineChart data={labelled} margin={{ top: 6, right: 8, bottom: 2, left: -18 }}>
             {/* Reference bands, only under a single-marker view. */}
             {single && bands.map((b) => (
               <ReferenceArea
@@ -374,13 +396,11 @@ export function SugarChart({
                     collide with each other rather than with themselves. */}
                 {showValues && (
                   <LabelList
-                    dataKey={code}
+                    dataKey={`${code}__label`}
                     position="top"
                     offset={8}
                     fontSize={9}
                     fill={SERIES_COLOR[code]}
-                    formatter={(v: number, _e: unknown, i: number) =>
-                      (labelEvery === 1 || i % labelEvery === 0 ? String(v) : '')}
                   />
                 )}
               </Line>

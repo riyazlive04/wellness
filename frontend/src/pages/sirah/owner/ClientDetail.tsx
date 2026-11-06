@@ -12,7 +12,7 @@ import {
   Cake, UserRound, Droplets, Dumbbell, HeartPulse, Salad, ShieldAlert, Utensils, Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { CartesianGrid, LabelList, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { DocumentPinCard } from '@/modules/workspace/clients/DocumentPinCard';
@@ -37,6 +37,7 @@ import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
+import { withValueLabels } from '@/modules/workspace/charts/valueLabels';
 
 type Tab = 'overview' | 'plan' | 'daily-log' | 'photos' | 'reminders' | 'meals' | 'measurements' | 'labs' | 'assessments' | 'files' | 'invoices' | 'notes' | 'ai';
 
@@ -411,10 +412,12 @@ const shortDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString('e
 function WeightTrendCard({ clientId }: { clientId: string }) {
   const q = useQuery({ queryKey: ['client', clientId, 'habits', 90], queryFn: () => clientsApi.clientWorkspaceHabits(clientId, 90) });
   // Daily logs store 0 when no weight was entered that day.
-  const points = (q.data ?? [])
+  const raw = (q.data ?? [])
     .filter((h) => h.weight_kg != null && Number(h.weight_kg) > 0)
     .map((h) => ({ date: h.date, kg: Number(h.weight_kg) }))
     .sort((a, b) => a.date.localeCompare(b.date));
+  // One decimal: 62.4 rounded to 62 hides exactly the change being tracked.
+  const points = withValueLabels(raw, 'kg', (v) => v.toFixed(1));
   const first = points[0];
   const last = points[points.length - 1];
   const change = first && last ? Math.round((last.kg - first.kg) * 10) / 10 : 0;
@@ -456,7 +459,10 @@ function WeightTrendCard({ clientId }: { clientId: string }) {
                     green down, amber up, neutral when it has barely moved.
                     The number already said which way this client is going;
                     a flat brand-coloured line said nothing. */}
-                <Line type="monotone" dataKey="kg" stroke={weightTone(change)} strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="kg" stroke={weightTone(change)} strokeWidth={2.5} dot={false} activeDot={{ r: 4 }}>
+                  <LabelList dataKey="kg__label" position="top" offset={8} fontSize={9}
+                    fill="currentColor" className="text-foreground/60" />
+                </Line>
               </LineChart>
             </ResponsiveContainer>
           </div>

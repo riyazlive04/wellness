@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowDown, ArrowUp, ChevronDown, FlaskConical, Loader2, Minus } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea, LabelList } from 'recharts';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { SugarChart } from '@/modules/workspace/labs/SugarChart';
 import { SugarLogCard } from '@/modules/workspace/labs/SugarLogCard';
 import { isSugarMarker, BP_MARKERS } from '@/modules/workspace/labs/sugarBands';
+import { withValueLabels } from '@/modules/workspace/charts/valueLabels';
 
 /**
  * My lab results — read-only.
@@ -172,9 +173,15 @@ function MarkerRow({ series, open, onToggle }: { series: LabSeries; open: boolea
   const tone = deltaTone(series.delta, series.higherIsWorse);
   const range = latest ? formatRange(latest.refLow, latest.refHigh, latest.refText) : null;
 
-  const chartData = series.points
-    .filter((p) => p.value !== null)
-    .map((p) => ({ date: p.takenOn, value: p.value as number }));
+  // Lab values vary in scale - an HbA1c of 5.6 and a cholesterol of 190 both
+  // appear here - so keep one decimal rather than rounding 5.6 to 6.
+  const chartData = withValueLabels(
+    series.points
+      .filter((p) => p.value !== null)
+      .map((p) => ({ date: p.takenOn, value: p.value as number })),
+    'value',
+    (v) => (Number.isInteger(v) ? String(v) : v.toFixed(1)),
+  );
 
   return (
     <div>
@@ -224,7 +231,10 @@ function MarkerRow({ series, open, onToggle }: { series: LabSeries; open: boolea
                     labelFormatter={(d) => fmt(String(d))}
                     formatter={(v: number) => [series.unit ? `${v} ${series.unit}` : v, series.markerLabel]}
                   />
-                  <Line type="monotone" dataKey="value" stroke="#14b8a6" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="value" stroke="#14b8a6" strokeWidth={2} dot={{ r: 3 }}>
+                    <LabelList dataKey="value__label" position="top" offset={8} fontSize={9}
+                      fill="currentColor" className="text-foreground/60" />
+                  </Line>
                 </LineChart>
               </ResponsiveContainer>
             </div>
