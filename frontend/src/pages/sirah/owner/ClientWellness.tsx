@@ -8,12 +8,16 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Loader2, Utensils, Droplet, Moon, Activity, Smile, Ruler,
-  BookOpen, ShieldCheck, AlertCircle, CalendarDays, Wand2 } from 'lucide-react';
+  BookOpen, ShieldCheck, AlertCircle, CalendarDays, Wand2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
+import {
+  weeksWithData, monthsWithData, clampIndex,
+} from '@/modules/workspace/charts/valueLabels';
+import { weekStart, addDays, monthLabel } from '@/modules/workspace/labs/sugarBands';
 
 /**
  * Nutritionist's client wellness deep-dive.
@@ -96,6 +100,12 @@ function MealsTab({ clientId }: { clientId: string }) {
   // choice, defaulting to everything, and the heading names the first day
   // that actually has data.
   const [days, setDays] = useState(365);
+  // Week / month stepping, matching the blood sugar charts so the two read
+  // alike when a coach walks a client through both on a call. Offsets, not
+  // dates, so they survive new rows arriving while the screen is open.
+  const [grain, setGrain] = useState<'all' | 'week' | 'month'>('all');
+  const [weekBack, setWeekBack] = useState(0);
+  const [monthBack, setMonthBack] = useState(0);
 
   const trendsQ = useQuery({
     queryKey: ['workspaces', 'clients', clientId, 'trends', days],
@@ -150,6 +160,27 @@ function MealsTab({ clientId }: { clientId: string }) {
       }));
   }, [trendsQ.data, habitsQ.data]);
 
+  const weeks = useMemo(
+    () => weeksWithData(dayRows.map((r) => r.date), weekStart),
+    [dayRows],
+  );
+  const months = useMemo(() => monthsWithData(dayRows.map((r) => r.date)), [dayRows]);
+
+  const weekIdx = clampIndex(weekBack, weeks.length);
+  const monthIdx = clampIndex(monthBack, months.length);
+  const week = weeks[weekIdx];
+  const month = months[monthIdx];
+
+  /** The rows actually drawn: everything, or one week, or one month. */
+  const shownRows = useMemo(() => {
+    if (grain === 'week' && week) {
+      const end = addDays(week, 6);
+      return dayRows.filter((r) => r.date >= week && r.date <= end);
+    }
+    if (grain === 'month' && month) return dayRows.filter((r) => r.date.startsWith(month));
+    return dayRows;
+  }, [dayRows, grain, week, month]);
+
   return (
     <div className="space-y-5">
       {/* Trend tiles */}
@@ -184,15 +215,15 @@ function MealsTab({ clientId }: { clientId: string }) {
                 </span>
               )}
             </div>
-            <div className="flex gap-1">
-              {([[30, '30d'], [90, '3m'], [365, 'All']] as const).map(([d, lbl]) => (
+            <div className="flex flex-wrap items-center gap-1">
+              {([['week', 'Week'], ['month', 'Month'], ['all', 'All']] as const).map(([g, lbl]) => (
                 <button
-                  key={d}
+                  key={g}
                   type="button"
-                  onClick={() => setDays(d)}
+                  onClick={() => { setGrain(g); if (g === 'all') setDays(365); }}
                   className={cn(
                     'rounded-full border px-2.5 py-0.5 text-[11px] transition-colors',
-                    days === d
+                    grain === g
                       ? 'border-teal-500/50 bg-teal-500/10 text-teal-700 dark:text-teal-300'
                       : 'border-foreground/10 text-foreground/55 hover:bg-foreground/[0.04]',
                   )}
@@ -200,10 +231,47 @@ function MealsTab({ clientId }: { clientId: string }) {
                   {lbl}
                 </button>
               ))}
+
+              {/* The navigator for whichever grain is selected. Disabled at
+                  each end rather than hidden, so the control does not move
+                  about as a coach steps through. */}
+              {grain !== 'all' && (
+                <div className="ml-1 flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-label={grain === 'week' ? 'Previous week' : 'Previous month'}
+                    disabled={(grain === 'week' ? weekIdx : monthIdx) <= 0}
+                    onClick={() => (grain === 'week'
+                      ? setWeekBack(weekBack - 1)
+                      : setMonthBack(monthBack - 1))}
+                    className="rounded-full border border-foreground/10 p-1 text-foreground/60 hover:bg-foreground/[0.04] disabled:opacity-30"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="min-w-[8.5rem] text-center text-[11px] font-semibold tabular-nums text-foreground/70">
+                    {grain === 'week'
+                      ? (week ? `${dayTick(week)} – ${dayTick(addDays(week, 6))}` : '—')
+                      : (month ? monthLabel(month) : '—')}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={grain === 'week' ? 'Next week' : 'Next month'}
+                    disabled={grain === 'week'
+                      ? weekIdx >= weeks.length - 1
+                      : monthIdx >= months.length - 1}
+                    onClick={() => (grain === 'week'
+                      ? setWeekBack(Math.min(0, weekBack + 1))
+                      : setMonthBack(Math.min(0, monthBack + 1)))}
+                    className="rounded-full border border-foreground/10 p-1 text-foreground/60 hover:bg-foreground/[0.04] disabled:opacity-30"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-          {dayRows.length > 0 ? (
-            <CaloriesWeightChart rows={dayRows} />
+          {shownRows.length > 0 ? (
+            <CaloriesWeightChart rows={shownRows} />
           ) : (
             <div className="grid h-24 place-items-center text-center text-xs text-foreground/50">
               No meals logged in this range. Try a longer one.
@@ -226,7 +294,7 @@ function MealsTab({ clientId }: { clientId: string }) {
           <div className="mb-3 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
             Protein · per day
           </div>
-          <ProteinChart rows={dayRows} />
+          <ProteinChart rows={shownRows} />
         </Glass>
       )}
 

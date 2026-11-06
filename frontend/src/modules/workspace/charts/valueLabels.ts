@@ -43,3 +43,34 @@ export function withValueLabels<T extends Record<string, unknown>>(
       i % step === 0 && typeof row[key] === 'number' ? format(row[key] as number) : '',
   }));
 }
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Stepping through weeks and months.
+ *
+ * The sugar charts already let a coach walk one week or one month at a time,
+ * and a practice asked for the same on calories and weight so the two read
+ * alike during a call. The sugar versions take sugar-specific types; these
+ * take plain dates, so any chart can use them.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/** Weeks containing at least one row, oldest first, each as its Monday. */
+export function weeksWithData(dates: string[], startOfWeek: (iso: string) => string): string[] {
+  return [...new Set(dates.map(startOfWeek))].sort();
+}
+
+/** Months containing at least one row, oldest first, as 'YYYY-MM'. */
+export function monthsWithData(dates: string[]): string[] {
+  return [...new Set(dates.map((d) => d.slice(0, 7)))].sort();
+}
+
+/**
+ * Clamp a navigator offset to the list it indexes.
+ *
+ * Stored as an offset from the newest entry rather than an absolute date, so
+ * it survives new rows arriving while the screen is open; clamped rather than
+ * validated so an offset past the end lands on the oldest entry instead of an
+ * empty chart.
+ */
+export function clampIndex(back: number, length: number): number {
+  return Math.min(Math.max(0, length - 1 + back), Math.max(0, length - 1));
+}
