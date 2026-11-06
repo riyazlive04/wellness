@@ -713,6 +713,10 @@ export interface PracticeInvoice {
   paid_method: string | null;
   paid_note: string | null;
   client_name: string | null;
+  // The server has always sent these; the type never declared them, so the
+  // invoice PDF was reading fields TypeScript believed did not exist.
+  client_email: string | null;
+  client_phone: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -8,6 +8,7 @@
     "build": "vite build && node scripts/prerender.mjs",
     "prerender": "node scripts/prerender.mjs",
     "build:dev": "vite build --mode development",
+    "typecheck": "tsc --build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -50,6 +50,8 @@ export const publicProfileApi = {
     headline?: string | null;
     bio?: string | null;
     show_join_cta?: boolean;
+    /** Empty string clears the photo; absent leaves it alone. */
+    photo_url?: string | null;
   }) => api.patch<OwnerPublicProfile>('/api/v1/workspaces/me/public-profile', { body }),
 
   replaceLinks: (links: Array<{ label: string; url: string; icon?: ProfileLinkIcon; enabled?: boolean }>) =>

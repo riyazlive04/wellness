@@ -221,7 +221,6 @@ function PaymentsTable() {
   });
   const total = data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / limit));
-  const sum = data?.summary;
 
   /**
    * Export what is on screen — the current filter, not just this page, so a

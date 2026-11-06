@@ -75,7 +75,7 @@ export function PlanLimitDialog({
 }) {
   const plansQ = useQuery({
     queryKey: ['billing', 'plans'],
-    queryFn: () => billingApi.plans(),
+    queryFn: () => billingApi.listPlans(),
     staleTime: 10 * 60_000,
   });
 
