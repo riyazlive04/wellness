@@ -645,7 +645,11 @@ interface DayRow {
 
 /** Short tick label: 5 Nov. The year is in the range heading above. */
 function dayTick(iso: string): string {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', {
+  // The Z matters. Without it the string parses as LOCAL midnight and is
+  // then formatted as UTC, so every date east of UTC rolled back a day:
+  // in IST a bar holding 18 September's meals was captioned "17 Sept".
+  // A coach correlating calories against weight would read the wrong day.
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-IN', {
     day: 'numeric', month: 'short', timeZone: 'UTC',
   });
 }
