@@ -99,6 +99,11 @@ export function SugarChart({
   const pts = points.map((p, i) => ({ x: xOf(i), y: yOf(p.value), value: p.value, flag: p.flag }));
   const lineColor = SERIES_COLOR[marker];
 
+  // Values can be denser than dates - they sit above the line rather than
+  // sharing one axis row - but not unlimited.
+  const valueEvery = points.length <= 8 ? 1 : points.length <= 16 ? 2 : 3;
+  const valueIdx = points.map((_, i) => i).filter((i) => i % valueEvery === 0);
+
   // Only label the first, middle and last dates: three fit, eight overlap.
   const labelIdx = points.length <= 2
     ? points.map((_, i) => i)
@@ -190,6 +195,27 @@ export function SugarChart({
               stroke={t.colors.surface}
               strokeWidth={1.2}
             />
+          ))}
+
+          {/* The reading itself, above its dot. Coaches review these
+              constantly and a phone has no hover at all, so a value only
+              reachable by tapping is a value nobody reads. Thinned on the
+              same rule as the dates: every Nth, or they overlap into a
+              smear. A label would clip off the top near the axis maximum,
+              so those sit below their dot instead. */}
+          {pts.map((p, i) => (
+            valueIdx.includes(i) ? (
+              <SvgText
+                key={`v-${i}`}
+                x={p.x}
+                y={p.y < 18 ? p.y + 13 : p.y - 7}
+                fill={t.colors.textMuted}
+                fontSize={8}
+                fontWeight="600"
+                textAnchor={i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'}>
+                {p.value}
+              </SvgText>
+            ) : null
           ))}
 
           {/* Dates under the dots they belong to. */}
@@ -341,6 +367,24 @@ export function SugarWeekChart({
                 strokeWidth={d.trend.flag === 'spike' ? 2 : 1.25}
                 strokeDasharray={d.trend.flag === 'spike' ? undefined : '2 2'}
               />
+            ) : null,
+          )}
+
+          {/* Every value printed: a week is seven points at most, so they
+              all fit without thinning. A label near the top of the axis
+              would clip, so it drops below its dot. */}
+          {week.map((d, i) =>
+            d.value != null ? (
+              <SvgText
+                key={`val-${d.takenOn}`}
+                x={xOf(i)}
+                y={yOf(d.value) < 18 ? yOf(d.value) + 13 : yOf(d.value) - 8}
+                fill={t.colors.textMuted}
+                fontSize={8}
+                fontWeight="600"
+                textAnchor="middle">
+                {d.value}
+              </SvgText>
             ) : null,
           )}
 
