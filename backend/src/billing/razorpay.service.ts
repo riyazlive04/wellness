@@ -105,6 +105,17 @@ export class RazorpayService {
      * seats = one subscription with quantity 3, billed 3x the unit price).
      */
     quantity?: number;
+    /**
+     * Unix seconds for the first charge. Omitted, Razorpay bills as soon as
+     * the mandate is authorised; set, the customer authorises now and is
+     * first charged on that date.
+     *
+     * Needed because Razorpay has NO way to move the billing date of a
+     * subscription that already exists - pause/resume only accepts
+     * `resume_at: 'now'`, and silently ignores a timestamp. Shifting a
+     * renewal therefore means cancelling and recreating with a start date.
+     */
+    startAt?: number;
     notes: Record<string, string>;
   }) {
     const client = this.requireClient();
@@ -113,6 +124,7 @@ export class RazorpayService {
         plan_id: params.razorpayPlanId,
         total_count: params.totalCount ?? 120, // ~10 years of monthly billing
         customer_notify: params.customerNotify ?? 1,
+        ...(params.startAt ? { start_at: params.startAt } : {}),
         ...(params.quantity && params.quantity > 1 ? { quantity: params.quantity } : {}),
         ...(params.addons?.length
           ? {
