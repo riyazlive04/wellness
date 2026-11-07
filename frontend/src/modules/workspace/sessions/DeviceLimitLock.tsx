@@ -25,6 +25,8 @@ import { supabase } from '@/integrations/supabase/client';
 /** What the 409 carries beside the message. */
 export interface DeviceLimitInfo {
   kind: 'web' | 'mobile';
+  /** Sessions allowed per kind, from the server so it cannot go stale here. */
+  limit: number;
   session: {
     id: string;
     user_agent: string | null;
@@ -46,6 +48,9 @@ export function deviceLimitFrom(err: unknown): DeviceLimitInfo | null {
   if (!s?.id) return null;
   return {
     kind: c.kind === 'mobile' ? 'mobile' : 'web',
+    // Falls back to 2 only for a server that predates sending it; the number
+    // lives in the backend so there is one place to change it.
+    limit: typeof c.limit === 'number' && c.limit > 0 ? c.limit : 2,
     session: s,
   };
 }
@@ -149,12 +154,17 @@ export function DeviceLimitLock({ info }: { info: DeviceLimitInfo }) {
         </span>
 
         <h1 className="mt-4 text-lg font-semibold tracking-tight">
-          Already signed in {info.kind === 'mobile' ? 'on another phone' : 'on another device'}
+          {info.kind === 'mobile' ? 'Too many phones signed in' : 'Too many devices signed in'}
         </h1>
 
+        {/* The allowance is stated as a number rather than "one browser and
+            one phone": it moved to two on 2026-11-07 and this sentence is
+            what a blocked user reads, so a stale count here reads as a
+            broken limit rather than an out-of-date string. */}
         <p className="mt-2 text-sm leading-relaxed text-foreground/65">
-          Your plan allows one browser and one phone per login. To use NUSI here, end the
-          session below — or sign in with your own account if this login belongs to a colleague.
+          Your plan allows {info.limit} browsers and {info.limit} phones per login. To use
+          NUSI here, end a session below — or sign in with your own account if this login
+          belongs to a colleague.
         </p>
 
         <div className="mt-5 flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-4 py-3">

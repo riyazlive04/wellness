@@ -2,18 +2,30 @@
  * How many devices one staff login may use at once, and which bucket a
  * request belongs to.
  *
- * The rule is one web session plus one mobile session per user, rather than
- * one session outright. A nutritionist on the clinic desktop who opens the
- * phone app during a home visit is the normal case, not sharing; counting the
- * two buckets separately stops a second *person* on the same login without
- * signing anyone out of their own devices.
+ * The rule is a fixed number of web sessions plus the same number of mobile
+ * sessions per user, rather than a single total. A nutritionist on the clinic
+ * desktop who opens the phone app during a home visit is the normal case, not
+ * sharing; counting the two buckets separately stops a second *person* on the
+ * same login without signing anyone out of their own devices.
  */
 
 /** Which kind of client a session came from. */
 export type DeviceKind = 'web' | 'mobile';
 
-/** One session per bucket. Deliberately not configurable per plan - see below. */
-export const MAX_PER_KIND = 1;
+/**
+ * Sessions allowed per bucket, so two web plus two mobile in total.
+ *
+ * Raised from 1 on 2026-11-07. One was defensible but brittle in practice: a
+ * clinic desktop and a laptop at home are the same person on the same day,
+ * and with a 12-hour idle cutoff the morning machine still held the slot
+ * every afternoon. Two covers that without making a shared password free -
+ * a password passed round a team of five still trips it.
+ *
+ * Deliberately not configurable per plan: a limit that varies by tier is one
+ * a support conversation has to explain, and the point is deterrence rather
+ * than revenue.
+ */
+export const MAX_PER_KIND = 2;
 
 /**
  * How long a session may sit untouched before it stops competing for a slot.

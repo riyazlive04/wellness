@@ -73,11 +73,18 @@ export class DeviceLimitException extends HttpException {
         error: 'Device limit reached',
         code: 'device_limit_reached',
         kind,
+        // Sent so the lock screen can state the allowance without keeping its
+        // own copy of the number, which would go stale the next time this
+        // changes - as it just did going from one to two.
+        limit: MAX_PER_KIND,
         session: holder,
+        // Worded for the limit, not for one device: "already in use on
+        // another device" read as though a single other session existed,
+        // which stopped being true when the allowance went to two.
         message:
           kind === 'mobile'
-            ? 'This login is already in use in the NUSI app on another phone. End that session to continue here.'
-            : 'This login is already in use in a browser on another device. End that session to continue here.',
+            ? `This login is already in use in the NUSI app on ${MAX_PER_KIND} other phones. End one of those sessions to continue here.`
+            : `This login is already open in ${MAX_PER_KIND} other browsers. End one of those sessions to continue here.`,
       },
       HttpStatus.CONFLICT,
     );

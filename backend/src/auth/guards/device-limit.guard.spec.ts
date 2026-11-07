@@ -89,13 +89,17 @@ describe('DeviceLimitGuard', () => {
   });
 
   // The whole point of the rule: a second person on the same login.
-  it('blocks the newer of two live browser sessions', async () => {
+  // Two are allowed since 2026-11-07, so it is the THIRD that is blocked.
+  it('blocks the newest of three live browser sessions', async () => {
     const { guard } = makeGuard([
       session('first', DESKTOP_UA, 1, 90),
-      session('second', DESKTOP_UA, 1, 5),
+      session('second', DESKTOP_UA, 1, 60),
+      session('third', DESKTOP_UA, 1, 5),
     ]);
+    await expect(guard.canActivate(ctx({ user: STAFF, sessionId: 'first' }))).resolves.toBe(true);
+    await expect(guard.canActivate(ctx({ user: STAFF, sessionId: 'second' }))).resolves.toBe(true);
     await expect(
-      guard.canActivate(ctx({ user: STAFF, sessionId: 'second' })),
+      guard.canActivate(ctx({ user: STAFF, sessionId: 'third' })),
     ).rejects.toThrow(DeviceLimitException);
   });
 
@@ -116,11 +120,13 @@ describe('DeviceLimitGuard', () => {
       // Each round the two sessions have just refreshed, in either order.
       const { guard } = makeGuard([
         session('first', DESKTOP_UA, round === 1 ? 0 : 0.2, 90),
-        session('second', DESKTOP_UA, round === 1 ? 0.2 : 0, 5),
+        session('second', DESKTOP_UA, round === 1 ? 0.2 : 0, 60),
+        session('third', DESKTOP_UA, round === 2 ? 0 : 0.2, 5),
       ]);
       await expect(guard.canActivate(ctx({ user: STAFF, sessionId: 'first' }))).resolves.toBe(true);
+      await expect(guard.canActivate(ctx({ user: STAFF, sessionId: 'second' }))).resolves.toBe(true);
       await expect(
-        guard.canActivate(ctx({ user: STAFF, sessionId: 'second' })),
+        guard.canActivate(ctx({ user: STAFF, sessionId: 'third' })),
       ).rejects.toThrow(DeviceLimitException);
     }
   });
@@ -152,7 +158,8 @@ describe('DeviceLimitGuard', () => {
   it('still counts a session used earlier the same day', async () => {
     const { guard } = makeGuard([
       session('morning', DESKTOP_UA, 60 * 6, 60 * 6), // in at nine, now mid-afternoon
-      session('other', DESKTOP_UA, 1, 1),
+      session('laptop', DESKTOP_UA, 1, 120),          // the same person's second machine
+      session('other', DESKTOP_UA, 1, 1),             // someone else on the password
     ]);
     await expect(guard.canActivate(ctx({ user: STAFF, sessionId: 'morning' }))).resolves.toBe(true);
     await expect(
@@ -171,13 +178,17 @@ describe('DeviceLimitGuard', () => {
     ).resolves.toBe(true);
   });
 
-  it('blocks a second mobile session', async () => {
+  it('blocks a third mobile session', async () => {
     const { guard } = makeGuard([
       session('app1', 'okhttp/4.9.2', 1, 90), // the phone already signed in
-      session('app2', 'okhttp/4.9.2', 1, 5),  // a second phone, same login
+      session('app2', 'okhttp/4.9.2', 1, 60), // a tablet, same person
+      session('app3', 'okhttp/4.9.2', 1, 5),  // a third device, same login
     ]);
     await expect(
       guard.canActivate(ctx({ user: STAFF, sessionId: 'app2', ua: 'okhttp/4.9.2' })),
+    ).resolves.toBe(true);
+    await expect(
+      guard.canActivate(ctx({ user: STAFF, sessionId: 'app3', ua: 'okhttp/4.9.2' })),
     ).rejects.toThrow(DeviceLimitException);
   });
 

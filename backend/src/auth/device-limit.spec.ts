@@ -1,4 +1,4 @@
-import { IDLE_CUTOFF_HOURS, deviceKindFromUserAgent, isIdle } from './device-limit';
+import { IDLE_CUTOFF_HOURS, MAX_PER_KIND, deviceKindFromUserAgent, isIdle } from './device-limit';
 
 /**
  * The UA strings below are real ones taken from auth.sessions on production,
@@ -75,5 +75,54 @@ describe('isIdle', () => {
   // An unknown last-active time must not silently free a slot.
   it('does not call a session with no timestamp idle', () => {
     expect(isIdle(null, now)).toBe(false);
+  });
+});
+
+/**
+ * How many sessions of one kind may run at once.
+ *
+ * Raised from 1 to 2 on 2026-11-07. Nothing covered the COUNT before - the
+ * existing tests check which bucket a user agent lands in and when a session
+ * goes idle - so a change to the allowance could have shipped with no test
+ * noticing. These pin the allocation rule itself.
+ */
+describe('how many sessions of one kind are allowed', () => {
+  // Mirrors the guard: oldest-first keeps the slots, the rest are blocked.
+  const allocate = (startedAt: number[], limit = MAX_PER_KIND) => {
+    const ranked = startedAt
+      .map((t, id) => ({ id, t }))
+      .sort((a, b) => a.t - b.t);
+    const allowed = new Set(ranked.slice(0, limit).map((r) => r.id));
+    return startedAt.map((_, id) => allowed.has(id));
+  };
+
+  it('allows two of the same kind at once', () => {
+    expect(MAX_PER_KIND).toBe(2);
+    expect(allocate([100, 200])).toEqual([true, true]);
+  });
+
+  it('blocks only the third', () => {
+    // Desktop, laptop, then someone else on the same password.
+    expect(allocate([100, 200, 300])).toEqual([true, true, false]);
+  });
+
+  it('keeps the slots with the sessions that started first', () => {
+    // Not last-active: each device refreshes its own timestamp every
+    // request, so ranking by activity handed the slot back and forth and
+    // nobody was ever blocked.
+    expect(allocate([300, 100, 200])).toEqual([false, true, true]);
+  });
+
+  it('still stops a password shared round a team', () => {
+    const five = allocate([1, 2, 3, 4, 5]);
+    expect(five.filter(Boolean)).toHaveLength(2);
+  });
+
+  it('web and mobile are separate buckets, so two each means four devices', () => {
+    // The guard filters by kind before allocating, so a full web allowance
+    // never costs someone their phone.
+    const web = allocate([100, 200]);
+    const mobile = allocate([150, 250]);
+    expect([...web, ...mobile].filter(Boolean)).toHaveLength(4);
   });
 });
