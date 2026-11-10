@@ -25,7 +25,7 @@ import { RequirePermission } from '../auth/decorators/require-permission.decorat
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { PrismaService } from '../database/prisma.service';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
-import { findPlan, findTopup, PLANS, TOPUPS, type PlanKey, type TopupKey } from './plans';
+import { ENTERPRISE_CARD, findPlan, findTopup, PLANS, TOPUPS, type PlanKey, type TopupKey } from './plans';
 import { ADDONS, addonsForPlan, findAddon, type AddonKey } from './addons';
 import { activeAddons } from './workspace-addons';
 import { resolveWorkspacePlan } from './resolve-plan';
@@ -336,6 +336,9 @@ export class WorkspaceBillingController {
         aiCreditsPerMonth: p.limits.aiCallsPerMonth,
         videoHoursPerMonth: p.limits.videoMinutesPerMonth == null ? null : p.limits.videoMinutesPerMonth / 60,
       })),
+      // Sibling of `plans`, never an entry in it: Enterprise is quoted, so it
+      // must never reach the checkout path that every plan tile drives.
+      enterprise: ENTERPRISE_CARD,
       topups: TOPUPS,
       razorpayKeyId: this.razorpay.keyId ?? null,
       razorpayConfigured: this.razorpay.isConfigured(),

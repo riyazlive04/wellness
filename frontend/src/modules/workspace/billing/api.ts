@@ -58,8 +58,23 @@ export interface Topup {
   popular?: boolean;
 }
 
+/**
+ * The quoted tier. Not a `Plan`: it has no price and no Razorpay id, so it must
+ * never be fed to PlanCard or the checkout path. Rendered as its own tile.
+ */
+export interface EnterpriseCard {
+  name: string;
+  priceLabel: string;
+  tagline: string;
+  promise: string;
+  features: string[];
+  ctaLabel: string;
+  ctaHref: string;
+}
+
 export interface PlansResponse {
   plans: Plan[];
+  enterprise?: EnterpriseCard;
   topups: Topup[];
   razorpayKeyId: string | null;
   razorpayConfigured: boolean;

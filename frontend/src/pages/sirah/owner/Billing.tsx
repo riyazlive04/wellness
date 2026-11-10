@@ -608,6 +608,42 @@ export default function OwnerBilling() {
                 })}
               </motion.div>
 
+              {/* Enterprise — quoted, so it is NOT a PlanCard: it has no price
+                  and no Razorpay id, and every plan tile above drives
+                  checkout. A full-width strip instead, linking to sales. */}
+              {plansQ.data?.enterprise && (
+                <motion.div variants={fadeUp}>
+                  <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card p-6 shadow-sm sm:p-7">
+                    <div className="flex flex-wrap items-start justify-between gap-5">
+                      <div className="min-w-[16rem] flex-1">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <h3 className="text-lg font-semibold">{plansQ.data.enterprise.name}</h3>
+                          <span className="rounded-full bg-foreground/[0.06] px-2.5 py-0.5 text-xs font-medium">
+                            {plansQ.data.enterprise.priceLabel}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-foreground/60">{plansQ.data.enterprise.tagline}</p>
+                        <p className="mt-2 text-sm text-foreground/80">{plansQ.data.enterprise.promise}</p>
+                        <ul className="mt-4 grid gap-x-6 gap-y-1.5 text-sm text-foreground/70 sm:grid-cols-2">
+                          {plansQ.data.enterprise.features.map((f) => (
+                            <li key={f} className="flex items-start gap-2">
+                              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                              <span>{f}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <a
+                        href={plansQ.data.enterprise.ctaHref}
+                        className="rounded-xl border border-foreground/15 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-foreground/[0.04]"
+                      >
+                        {plansQ.data.enterprise.ctaLabel}
+                      </a>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {/* Top-ups */}
               <motion.div variants={fadeUp}>
                 <TopupSection

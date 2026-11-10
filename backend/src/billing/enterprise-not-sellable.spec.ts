@@ -1,5 +1,6 @@
 import { ENTERPRISE_CARD, PLANS, findPlan, limitsForPlan, sellablePlans, TRIAL_LIMITS } from './plans';
 import { PublicPlansController } from './public-plans.controller';
+import { WorkspaceBillingController } from './workspace-billing.controller';
 
 /**
  * Acceptance criteria 5 and 6 of build-docs/features/enterprise-plan.md.
@@ -39,6 +40,17 @@ describe('Enterprise is quoted, not sellable', () => {
     // String-widened: PlanKey has no 'enterprise' member today, and this must
     // keep guarding at runtime if someone adds one.
     expect(data.plans.some((p) => String(p.key) === 'enterprise')).toBe(false);
+  });
+
+  it('criterion 8: the signed-in catalogue serves it beside the three plans', () => {
+    // Same guarantee as the public endpoint: the billing page's plan tiles all
+    // drive Razorpay checkout, so Enterprise must never arrive inside `plans`.
+    const controller = Object.create(WorkspaceBillingController.prototype) as WorkspaceBillingController;
+    (controller as unknown as { razorpay: unknown }).razorpay = { keyId: null, isConfigured: () => false };
+    const res = controller.listPlans();
+    expect(res.plans).toHaveLength(3);
+    expect(res.enterprise).toBe(ENTERPRISE_CARD);
+    expect(res.plans.some((p) => String(p.key) === 'enterprise')).toBe(false);
   });
 
   it('criterion 3: its CTA carries the enterprise intent into the booking form', () => {

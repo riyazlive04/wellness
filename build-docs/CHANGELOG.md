@@ -11,3 +11,4 @@
 - `prerender.mjs`: Enterprise added to the `/pricing` and `/home` crawlable copy and the `/pricing` meta description (hand-maintained SEO copy would otherwise have shown 3 tiers to crawlers).
 - 7 new tests + 132 regression tests pass; all 7 acceptance criteria verified in a real headless Chrome.
 - Not done, by design: no in-app Enterprise card (purchase surfaces only), and a closed deal is still set up by hand.
+- Follow-up (same day): Enterprise added to the in-app billing page too. `/billing/me/plans` serves it as a sibling of `plans`; rendered as a full-width strip below the plan grid, not a `PlanCard` (that component drives Razorpay checkout). 8 tests, 133 regression tests pass.

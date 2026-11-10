@@ -70,8 +70,22 @@ visitor → /pricing → "Contact sales" → /booking-page?intent=enterprise
 | `prerender.mjs` | SEO snapshot of /pricing must include the card | Deploy runs prerender after build (see project MEMORY) |
 | `limitsForPlan`, TrialGuard, Razorpay, `planCapabilities.ts` | None — no new key | Asserted by test: `findPlan('enterprise') === undefined` |
 
-Not touched, deliberately: in-app `PlanCard` / `StepPlan` / `BillingPage`.
-Those are purchase surfaces; a card that cannot be bought there is a dead end.
+5. `frontend/src/pages/sirah/owner/Billing.tsx` (added 2026-11-10, after
+   review) — the in-app billing page. The original plan left this out as "a
+   purchase surface"; that was wrong. `/billing` is precisely where a paying
+   Scale Pro customer hits "Unlimited clients" and has no way to ask for more,
+   so it is the best upgrade conversation in the product.
+
+   It is NOT a `PlanCard`: that component takes `currentKey`, `pending`,
+   `onSelect` and drives Razorpay checkout, so threading a priceless tier
+   through it would need a null-guard in every prop. A separate full-width
+   strip after the plan grid instead, reusing the page's own card styling.
+   `/billing/me/plans` serves `enterprise` as a sibling of `plans`, exactly as
+   the public endpoint does.
+
+Still not touched, deliberately: `StepPlan` (onboarding). A brand-new signup
+choosing their first plan is not an enterprise buyer, and that step gates
+onboarding progress.
 
 ## Edge cases and failure modes
 
@@ -98,6 +112,9 @@ Those are purchase surfaces; a card that cannot be bought there is a dead end.
 6. `GET /api/v1/public/plans` returns `data.plans.length === 3` and a non-null
    `data.enterprise`.
 7. Layout holds with no horizontal scroll at 375px, 768px and 1280px.
+8. `GET /api/v1/billing/me/plans` returns 3 plans and a non-null `enterprise`,
+   and the in-app billing page shows the Enterprise strip below the plan grid
+   with the same "Contact sales" CTA.
 
 ## Tests
 
