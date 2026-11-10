@@ -81,11 +81,18 @@ visitor → /pricing → "Contact sales" → /booking-page?intent=enterprise
    through it would need a null-guard in every prop. A separate banner
    instead, reusing the page's own card styling.
 
-   It sits ABOVE the plan grid. It was first placed below, which made it
-   invisible in practice: the three plan cards are ~600px tall, so a Scale Pro
-   customer — the exact person who needs it — never scrolls that far. Moved up
-   and compacted to one line (name, Quoted badge, tagline, CTA; the feature
-   list moved to the link's `title`) so it does not push the plans down.
+   It is a 4th tile INSIDE the plan grid, which went `lg:grid-cols-3` →
+   `lg:grid-cols-2 xl:grid-cols-4`. Two earlier attempts were wrong: below the
+   grid it was invisible (the plan cards are ~600px tall, so the one customer
+   who needs it never scrolls that far), and a one-line banner above the grid
+   read as an ad rather than a tier. It now mirrors PlanCard's anatomy —
+   gradient header, price slot ("Quoted", no /month or GST line), two-column
+   features, pinned CTA — so it reads as a sibling of the three plans.
+
+   Coupling to watch: the markup duplicates PlanCard's layout rather than
+   reusing it, so a change to PlanCard's visual structure must be mirrored
+   here. That was the deliberate trade against null-guarding every
+   checkout-related prop for a tier that cannot be bought.
    `/billing/me/plans` serves `enterprise` as a sibling of `plans`, exactly as
    the public endpoint does.
 

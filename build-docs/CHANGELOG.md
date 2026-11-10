@@ -13,3 +13,4 @@
 - Not done, by design: no in-app Enterprise card (purchase surfaces only), and a closed deal is still set up by hand.
 - Follow-up (same day): Enterprise added to the in-app billing page too. `/billing/me/plans` serves it as a sibling of `plans`; rendered as a full-width strip below the plan grid, not a `PlanCard` (that component drives Razorpay checkout). 8 tests, 133 regression tests pass.
 - Fix: the billing-page Enterprise block was below the plan grid, where the ~600px-tall plan cards hid it entirely. Moved above the grid and compacted to a one-line banner (features moved to the CTA's `title`).
+- Enterprise on /billing is now a 4th card in the plan grid (grid `lg:grid-cols-2 xl:grid-cols-4`), mirroring PlanCard's anatomy, instead of a banner. Not a `PlanCard`: that component drives Razorpay checkout.

@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Receipt, Wallet, FileText, AlertTriangle, CheckCircle2,
   Download, Loader2, Bell, BellOff, Zap, Users, AlertCircle, ShieldCheck,
+  Check, Building2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -546,33 +547,8 @@ export default function OwnerBilling() {
                 {couponForm('center')}
               </motion.div>
 
-              {/* Enterprise — quoted, so it is NOT a PlanCard: no price and no
-                  Razorpay id, and every tile below drives checkout. Sits ABOVE
-                  the grid because the plan cards are tall: a Scale Pro customer
-                  looking to move up would never scroll past them to find it. */}
-              {plansQ.data?.enterprise && (
-                <motion.div variants={fadeUp}>
-                  <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 rounded-2xl border border-foreground/[0.08] bg-card px-5 py-4 shadow-sm">
-                    <div className="flex min-w-[15rem] flex-1 flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="text-sm font-semibold">{plansQ.data.enterprise.name}</span>
-                      <span className="rounded-full bg-foreground/[0.06] px-2.5 py-0.5 text-xs font-medium">
-                        {plansQ.data.enterprise.priceLabel}
-                      </span>
-                      <span className="text-sm text-foreground/60">{plansQ.data.enterprise.tagline}</span>
-                    </div>
-                    <a
-                      href={plansQ.data.enterprise.ctaHref}
-                      title={plansQ.data.enterprise.features.join(' · ')}
-                      className="shrink-0 rounded-xl border border-foreground/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-foreground/[0.04]"
-                    >
-                      {plansQ.data.enterprise.ctaLabel}
-                    </a>
-                  </div>
-                </motion.div>
-              )}
-
               {/* Plan tiles (interactive) */}
-              <motion.div variants={fadeUp} className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              <motion.div variants={fadeUp} className="grid gap-5 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
                 {plansQ.data?.plans.map((plan) => {
                   // Only lock a card as "Current plan" when a real Razorpay
                   // subscription exists. A soft starter label (dev-activate /
@@ -631,6 +607,64 @@ export default function OwnerBilling() {
                     />
                   );
                 })}
+
+                {/* Enterprise as a 4th tile. Deliberately not a <PlanCard>: that
+                    takes currentKey/pending/onSelect and drives Razorpay
+                    checkout, and Enterprise has no price and no plan id. The
+                    markup mirrors PlanCard's anatomy so it reads as a sibling:
+                    gradient header, price slot, two-column features, pinned
+                    CTA. Keep the two in step if PlanCard's layout changes. */}
+                {plansQ.data?.enterprise && (
+                  <div className="relative flex flex-col overflow-hidden rounded-2xl border border-foreground/[0.08] bg-canvas shadow-sm">
+                    <div className="bg-gradient-to-r from-[hsl(215_28%_22%)] to-[hsl(215_25%_34%)] px-5 py-4 text-white">
+                      <div className="flex items-center gap-2.5">
+                        <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-white/20">
+                          <Building2 className="h-4.5 w-4.5" />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-lg font-bold leading-tight tracking-tight">
+                            {plansQ.data.enterprise.name}
+                          </div>
+                          <div className="truncate text-[11px] text-white/80">
+                            {plansQ.data.enterprise.tagline}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Price slot: "Quoted" stands where the figure goes, with
+                        no /month or GST line - there is no price to qualify. */}
+                    <div className="px-5 pb-4 pt-5 text-center">
+                      <div className="flex items-end justify-center gap-1">
+                        <span className="text-3xl font-extrabold tracking-tight">
+                          {plansQ.data.enterprise.priceLabel}
+                        </span>
+                      </div>
+                      <div className="mt-0.5 text-[10px] text-foreground/50">priced to your organisation</div>
+                      <div className="mt-3 rounded-lg bg-[hsl(var(--brand-magenta))]/[0.08] px-3 py-1.5 text-[11px] font-medium text-[hsl(var(--brand-blue))] dark:text-lime-300">
+                        {plansQ.data.enterprise.promise}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-x-3 gap-y-1.5 px-5 pb-4 sm:grid-cols-2">
+                      {plansQ.data.enterprise.features.map((f) => (
+                        <div key={f} className="flex items-start gap-1.5 text-[12px] text-foreground/80">
+                          <Check className="mt-[3px] h-3 w-3 flex-shrink-0 text-[hsl(var(--brand-blue))] dark:text-lime-300" strokeWidth={3} />
+                          <span className="leading-snug">{f}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-auto px-5 pb-5">
+                      <a
+                        href={plansQ.data.enterprise.ctaHref}
+                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-[hsl(215_28%_26%)] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[hsl(215_28%_18%)]"
+                      >
+                        {plansQ.data.enterprise.ctaLabel}
+                      </a>
+                    </div>
+                  </div>
+                )}
               </motion.div>
 
               {/* Top-ups */}
