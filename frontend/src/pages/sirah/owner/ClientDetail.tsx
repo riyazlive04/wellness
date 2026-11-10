@@ -373,7 +373,9 @@ function OverviewTab({ clientId }: { clientId: string }) {
         <CardHead icon={Flame} title="Nutrition" color="orange"
           right={<span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Last 14 days</span>} />
         {trends.length === 0 ? (
-          <Empty text="No meals logged yet" />
+          // The card looks back 14 days; saying "yet" accused a client who
+          // paused of never having logged at all.
+          <Empty text="No meals in the last 14 days" />
         ) : (
           <div className="mt-4 grid grid-cols-3 gap-2.5">
             <MetricStat icon={Flame} value={String(avgKcal)} label="avg kcal/day" color="orange" />
@@ -387,7 +389,7 @@ function OverviewTab({ clientId }: { clientId: string }) {
         <CardHead icon={HeartPulse} title="Daily habits" color="sky"
           right={<span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Latest day</span>} />
         {!latestHabit ? (
-          <Empty text="No habit data yet" />
+          <Empty text="Nothing logged recently" />
         ) : (
           <div className="mt-4 grid grid-cols-3 gap-2.5">
             <MetricStat icon={Droplets} value={`${(latestHabit.water_ml / 1000).toFixed(1)}L`} label="water" color="sky" />
@@ -672,7 +674,10 @@ function MealsTab({ clientId }: { clientId: string }) {
     <Glass className="overflow-hidden rounded-3xl border-foreground/[0.06] shadow-sm">
       <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-bold">Recent meals · last 30 days</div>
       {meals.length === 0 ? (
-        <Empty text="No meals logged yet" pad />
+        // "No meals logged yet" claimed the client had NEVER logged, when the
+        // query only looks back 30 days: a client who paused six weeks ago
+        // read as one who had never started. Say what was actually checked.
+        <Empty text="No meals in the last 30 days" pad />
       ) : (
         <ul className="divide-y divide-foreground/[0.04]">
           {groupByPlate(meals).map((g) => (
