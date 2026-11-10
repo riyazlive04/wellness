@@ -546,6 +546,31 @@ export default function OwnerBilling() {
                 {couponForm('center')}
               </motion.div>
 
+              {/* Enterprise — quoted, so it is NOT a PlanCard: no price and no
+                  Razorpay id, and every tile below drives checkout. Sits ABOVE
+                  the grid because the plan cards are tall: a Scale Pro customer
+                  looking to move up would never scroll past them to find it. */}
+              {plansQ.data?.enterprise && (
+                <motion.div variants={fadeUp}>
+                  <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 rounded-2xl border border-foreground/[0.08] bg-card px-5 py-4 shadow-sm">
+                    <div className="flex min-w-[15rem] flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="text-sm font-semibold">{plansQ.data.enterprise.name}</span>
+                      <span className="rounded-full bg-foreground/[0.06] px-2.5 py-0.5 text-xs font-medium">
+                        {plansQ.data.enterprise.priceLabel}
+                      </span>
+                      <span className="text-sm text-foreground/60">{plansQ.data.enterprise.tagline}</span>
+                    </div>
+                    <a
+                      href={plansQ.data.enterprise.ctaHref}
+                      title={plansQ.data.enterprise.features.join(' · ')}
+                      className="shrink-0 rounded-xl border border-foreground/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-foreground/[0.04]"
+                    >
+                      {plansQ.data.enterprise.ctaLabel}
+                    </a>
+                  </div>
+                </motion.div>
+              )}
+
               {/* Plan tiles (interactive) */}
               <motion.div variants={fadeUp} className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                 {plansQ.data?.plans.map((plan) => {
@@ -607,42 +632,6 @@ export default function OwnerBilling() {
                   );
                 })}
               </motion.div>
-
-              {/* Enterprise — quoted, so it is NOT a PlanCard: it has no price
-                  and no Razorpay id, and every plan tile above drives
-                  checkout. A full-width strip instead, linking to sales. */}
-              {plansQ.data?.enterprise && (
-                <motion.div variants={fadeUp}>
-                  <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card p-6 shadow-sm sm:p-7">
-                    <div className="flex flex-wrap items-start justify-between gap-5">
-                      <div className="min-w-[16rem] flex-1">
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <h3 className="text-lg font-semibold">{plansQ.data.enterprise.name}</h3>
-                          <span className="rounded-full bg-foreground/[0.06] px-2.5 py-0.5 text-xs font-medium">
-                            {plansQ.data.enterprise.priceLabel}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm text-foreground/60">{plansQ.data.enterprise.tagline}</p>
-                        <p className="mt-2 text-sm text-foreground/80">{plansQ.data.enterprise.promise}</p>
-                        <ul className="mt-4 grid gap-x-6 gap-y-1.5 text-sm text-foreground/70 sm:grid-cols-2">
-                          {plansQ.data.enterprise.features.map((f) => (
-                            <li key={f} className="flex items-start gap-2">
-                              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                              <span>{f}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <a
-                        href={plansQ.data.enterprise.ctaHref}
-                        className="rounded-xl border border-foreground/15 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-foreground/[0.04]"
-                      >
-                        {plansQ.data.enterprise.ctaLabel}
-                      </a>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
 
               {/* Top-ups */}
               <motion.div variants={fadeUp}>

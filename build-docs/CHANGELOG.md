@@ -12,3 +12,4 @@
 - 7 new tests + 132 regression tests pass; all 7 acceptance criteria verified in a real headless Chrome.
 - Not done, by design: no in-app Enterprise card (purchase surfaces only), and a closed deal is still set up by hand.
 - Follow-up (same day): Enterprise added to the in-app billing page too. `/billing/me/plans` serves it as a sibling of `plans`; rendered as a full-width strip below the plan grid, not a `PlanCard` (that component drives Razorpay checkout). 8 tests, 133 regression tests pass.
+- Fix: the billing-page Enterprise block was below the plan grid, where the ~600px-tall plan cards hid it entirely. Moved above the grid and compacted to a one-line banner (features moved to the CTA's `title`).

@@ -78,8 +78,14 @@ visitor → /pricing → "Contact sales" → /booking-page?intent=enterprise
 
    It is NOT a `PlanCard`: that component takes `currentKey`, `pending`,
    `onSelect` and drives Razorpay checkout, so threading a priceless tier
-   through it would need a null-guard in every prop. A separate full-width
-   strip after the plan grid instead, reusing the page's own card styling.
+   through it would need a null-guard in every prop. A separate banner
+   instead, reusing the page's own card styling.
+
+   It sits ABOVE the plan grid. It was first placed below, which made it
+   invisible in practice: the three plan cards are ~600px tall, so a Scale Pro
+   customer — the exact person who needs it — never scrolls that far. Moved up
+   and compacted to one line (name, Quoted badge, tagline, CTA; the feature
+   list moved to the link's `title`) so it does not push the plans down.
    `/billing/me/plans` serves `enterprise` as a sibling of `plans`, exactly as
    the public endpoint does.
 
