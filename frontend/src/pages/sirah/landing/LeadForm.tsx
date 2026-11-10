@@ -310,11 +310,15 @@ function OtpBox({ otp, channel = 'phone' }: { otp: OtpState; channel?: OtpChanne
   );
 }
 
-/** Ad/campaign parameters from the URL, so leads can be attributed. */
+/**
+ * Ad/campaign parameters from the URL, so leads can be attributed.
+ * `intent` also rides along: the pricing page's Enterprise card sends
+ * ?intent=enterprise so sales can tell those leads apart.
+ */
 function captureSource() {
   const params = new URLSearchParams(window.location.search);
   const source: Record<string, string> = {};
-  for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid']) {
+  for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid', 'intent']) {
     const value = params.get(key);
     if (value) source[key] = value.slice(0, 200);
   }

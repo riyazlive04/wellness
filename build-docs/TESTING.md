@@ -9,3 +9,10 @@ Per-feature tests mapped to that feature's acceptance criteria and edge cases (s
 - Backend: 68 labs tests, 781 total, all pass.
 - Found: `SELF_LOGGABLE` growing to include BP broke two existing tests that assumed every member was glycaemic/mg/dL — those assertions were scoped down to the sugar markers (correct fix, not a weakened test).
 - Frontend (entry card, chart): not yet implemented — no tests yet.
+
+### Enterprise plan (`features/enterprise-plan.md`)
+- Backend: `enterprise-not-sellable.spec.ts`, 7 tests — criteria 3, 5, 6 (not resolvable as a plan key, catalogue stays at 3 tiers, falls back to trial limits, no Razorpay id, endpoint serves it beside `plans`, CTA carries the intent).
+- Regression (impact map): 132 tests across `src/billing`, `src/tenancy/limits.service.spec.ts`, `src/auth/guards/trial.guard.spec.ts` — all pass. Frontend `tsc --noEmit` clean.
+- Criteria 1, 2, 3, 4, 7 verified by driving the running app in headless Chrome (CDP): 4 cards in order Starter/Growth/Scale Pro/Enterprise; "Quoted" with no /month or /year suffix and no setup-fee line; yearly toggle changes Starter but leaves Enterprise byte-identical (control asserted, so a dead toggle cannot pass it); CTA resolves to `/booking-page?intent=enterprise` and `captureSource()` emits `{"intent":"enterprise"}`; no horizontal scroll at 375/768/1280.
+- Found while testing: `prerender.mjs` duplicates the pricing copy by hand, so crawlers would have kept seeing 3 tiers. Fixed in the same change (it was in the feature doc's impact map).
+- Note: no frontend test runner exists in this repo. Adding vitest + testing-library + jsdom for one card was rejected as disproportionate; the browser checks above are scripted and repeatable from `build-docs/features/enterprise-plan.md`.

@@ -340,3 +340,46 @@ export function sellablePlans(): PlanDescriptor[] {
 export function findTopup(key: string): TopupDescriptor | undefined {
   return TOPUPS.find((t) => t.key === key);
 }
+/**
+ * The Enterprise card on the public pricing page.
+ *
+ * Deliberately NOT a PlanKey and NOT in PLANS. Enterprise has no price and no
+ * razorpay_plan_id, so making it a plan key would mean a "not self-serve"
+ * branch in limitsForPlan(), the trial guard and the whole checkout path — for
+ * something nobody can buy until a human quotes it. It is presentation only:
+ * the card's CTA books a sales call, and a closed deal is set up by hand.
+ *
+ * If you are tempted to push this into PLANS: limitsForPlan('enterprise')
+ * would start resolving, and checkout would 500 on the missing Razorpay plan
+ * id. enterprise-not-sellable.spec.ts fails if that happens.
+ */
+export interface EnterpriseCard {
+  name: string;
+  /** Shown where the other cards show a price. */
+  priceLabel: string;
+  tagline: string;
+  promise: string;
+  features: string[];
+  ctaLabel: string;
+  /** Where the CTA goes. The booking form tags the lead from `intent`. */
+  ctaHref: string;
+}
+
+export const ENTERPRISE_CARD: EnterpriseCard = {
+  name: 'Enterprise',
+  priceLabel: 'Quoted',
+  tagline: 'For chains, hospitals and franchise groups',
+  promise: 'Built around how your organisation already works.',
+  features: [
+    'Unlimited clients and team',
+    'Negotiated AI actions a month',
+    'Negotiated storage',
+    'Multi-branch and franchise dashboard',
+    'White-label apps and custom domain',
+    'Dedicated success manager and onboarding',
+    'Priority SLA and security review',
+    'Custom contract and invoicing',
+  ],
+  ctaLabel: 'Contact sales',
+  ctaHref: '/booking-page?intent=enterprise',
+};

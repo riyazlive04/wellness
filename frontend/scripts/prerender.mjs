@@ -72,6 +72,7 @@ const PAGES = [
         'Starter — ₹3,999 a month, for solo nutritionists: 100 clients, 1 user, 500 AI actions a month, 5 GB storage.',
         'Growth — ₹8,999 a month, for growing practices: 500 clients, 5 team members, 5,000 AI actions, video consultations.',
         'Scale Pro — ₹19,999 a month, for clinics and nutrition centres: unlimited clients, unlimited team, multi-branch, white-label.',
+        'Enterprise — quoted, for chains, hospitals and franchise groups: negotiated limits, white-label apps, dedicated success manager and a custom contract.',
         'All prices include GST. Every plan starts with 14 days free and no card needed.',
       ]],
     ],
@@ -115,7 +116,7 @@ const PAGES = [
     path: '/pricing',
     title: 'NUSI Pricing — Nutrition Practice Software from ₹3,999/month (GST incl.)',
     description:
-      'NUSI plans for Indian nutrition practices: Starter ₹3,999, Growth ₹8,999, Scale Pro ₹19,999 a month, GST included. 14 days free, no card needed.',
+      'NUSI plans for Indian nutrition practices: Starter ₹3,999, Growth ₹8,999, Scale Pro ₹19,999 a month, plus a quoted Enterprise plan. GST included. 14 days free, no card needed.',
     h1: 'One subscription. Your whole practice.',
     intro: 'Every plan starts with 14 days free, and no card to begin. Prices include GST.',
     sections: [
@@ -123,6 +124,7 @@ const PAGES = [
         'Starter — ₹3,999 a month for solo nutritionists. 100 clients, 1 user, 500 AI actions a month, 5 GB storage. One-time ₹4,999 setup fee.',
         'Growth — ₹8,999 a month for growing practices. 500 clients, 5 team members, 5,000 AI actions, video consultations. One-time ₹9,999 setup fee.',
         'Scale Pro — ₹19,999 a month for clinics and nutrition centres. Unlimited clients, unlimited team, multi-branch, white-label. One-time ₹24,999 setup fee.',
+        'Enterprise — quoted, for chains, hospitals and franchise groups. Unlimited clients and team, negotiated AI actions and storage, multi-branch, white-label apps, dedicated success manager, priority SLA and a custom contract. Contact sales to book a call.',
       ]],
       ['Questions', [
         'Is there a free trial? Yes — 14 days, and we do not ask for a card to start.',

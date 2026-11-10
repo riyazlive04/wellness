@@ -23,6 +23,17 @@ interface PublicPlan {
   storageGb: number | null;
 }
 
+/** Quoted tier — no price, no checkout. Served beside `plans`, never inside it. */
+interface EnterpriseCard {
+  name: string;
+  priceLabel: string;
+  tagline: string;
+  promise: string;
+  features: string[];
+  ctaLabel: string;
+  ctaHref: string;
+}
+
 const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
 const FAQ = [
@@ -49,11 +60,15 @@ export default function SitePricing() {
   const [cycle, setCycle] = useState<'monthly' | 'annual'>('monthly');
   const q = useQuery({
     queryKey: ['public', 'plans'],
-    queryFn: () => api.get<{ plans: PublicPlan[] }>('/api/v1/public/plans', { skipAuth: true }),
+    queryFn: () =>
+      api.get<{ plans: PublicPlan[]; enterprise?: EnterpriseCard }>('/api/v1/public/plans', { skipAuth: true }),
     staleTime: 10 * 60_000,
   });
 
   const plans = q.data?.plans ?? [];
+  // Only alongside real plans: if the catalogue failed to load, the error
+  // state owns the section and a lone Enterprise card would be misleading.
+  const enterprise = plans.length ? q.data?.enterprise : undefined;
 
   return (
     <SiteLayout
@@ -89,7 +104,7 @@ export default function SitePricing() {
               className="rounded-lg border border-[#d9d9d6] px-3 py-1.5 text-sm font-medium">Try again</button>
           </div>
         ) : (
-          <div className="grid gap-px overflow-hidden rounded-xl border border-[#ededea] bg-[#ededea] sm:grid-cols-3">
+          <div className="grid gap-px overflow-hidden rounded-xl border border-[#ededea] bg-[#ededea] sm:grid-cols-2 lg:grid-cols-4">
             {plans.map((p) => {
               const annual = cycle === 'annual' && p.priceInrAnnual;
               const price = annual ? p.priceInrAnnual! : p.priceInr;
@@ -141,6 +156,35 @@ export default function SitePricing() {
                 </div>
               );
             })}
+
+            {enterprise && (
+              <div className="flex flex-col bg-white p-6">
+                <div className="flex items-baseline justify-between gap-2">
+                  <h2 className="text-[15px] font-medium">{enterprise.name}</h2>
+                </div>
+                <p className="mt-1 text-[13.5px] text-[#9b9b9b]">{enterprise.tagline}</p>
+
+                {/* No price and no /month suffix: the cycle toggle must not
+                    appear to change anything about a quoted tier. */}
+                <div className="mt-5">
+                  <span className="text-[30px] font-normal tracking-[-0.035em]">{enterprise.priceLabel}</span>
+                </div>
+                <p className="mt-1 text-[13px] text-[#9b9b9b]">{enterprise.promise}</p>
+
+                <ul className="mt-6 grid gap-2 text-[14px] text-[#6b6b6b]">
+                  {enterprise.features.slice(0, 3).map((f) => <li key={f}>{f}</li>)}
+                </ul>
+
+                <ul className="mt-4 grid gap-1.5 border-t border-[#ededea] pt-4 text-[13.5px] text-[#6b6b6b]">
+                  {enterprise.features.slice(3).map((f) => <li key={f}>{f}</li>)}
+                </ul>
+
+                <Link to={enterprise.ctaHref}
+                  className="mt-6 rounded-lg border border-[#d9d9d6] px-4 py-2.5 text-center text-sm font-medium text-[#0c0c0c] transition-opacity hover:opacity-85">
+                  {enterprise.ctaLabel}
+                </Link>
+              </div>
+            )}
           </div>
         )}
 

@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Public } from '../auth/decorators/public.decorator';
-import { PLANS, TOPUPS } from './plans';
+import { ENTERPRISE_CARD, PLANS, TOPUPS } from './plans';
 
 /**
  * The plan catalogue, readable without signing in — for the public pricing
@@ -42,6 +42,9 @@ export class PublicPlansController {
           storageGb: p.limits.maxStorageBytes == null ? null : Math.round(p.limits.maxStorageBytes / (1024 ** 3)),
           videoHoursPerMonth: p.limits.videoMinutesPerMonth == null ? null : p.limits.videoMinutesPerMonth / 60,
         })),
+        // Sibling of `plans`, never an entry in it: Enterprise is quoted, not
+        // sellable, and the pricing page must not iterate it as buyable.
+        enterprise: ENTERPRISE_CARD,
         topups: TOPUPS.map((t) => ({
           key: t.key, name: t.name, priceInr: t.priceInr, units: t.units,
           description: t.description, savePct: t.savePct ?? null, popular: t.popular === true,
