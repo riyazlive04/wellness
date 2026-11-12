@@ -6,7 +6,7 @@ export default function SiteAbout() {
   return (
     <SiteLayout
       title="About NUSI — by Sirah Digital"
-      description="NUSI is built by Sirah Digital in Chennai, with practising dietitians, for nutrition practices in India."
+      description="NUSI is built by Sirah Digital, with practising dietitians, for nutrition practices across India."
     >
       <Section className="pb-12 pt-20 sm:pt-24">
         <h1 className="max-w-[24ch] text-[32px] font-normal leading-[1.12] tracking-[-0.035em] sm:text-[40px]">
@@ -66,12 +66,11 @@ export default function SiteAbout() {
           <div className="max-w-[64ch] text-[15.5px] leading-relaxed text-[#6b6b6b]">
             <p>
               NUSI is made by <b className="font-medium text-[#0c0c0c]">Sirah Digital</b>, a software company
-              in Chennai, Tamil Nadu. We build and run it ourselves — the same people answer support.
+              in India. We build and run it ourselves — the same people answer support.
             </p>
+            {/* No street address here: it is on /terms and /privacy, where it is
+                required, and repeating it made Google show it in search results. */}
             <address className="mt-5 not-italic text-[14.5px]">
-              SY No. 203/10B, Innov8, Featherlite The Address<br />
-              200 Feet Radial Road, Iswarya Nagar<br />
-              Pallavaram, Tamil Nadu 600044<br />
               <a href="mailto:support@sirahdigital.in" className="underline-offset-4 hover:underline">support@sirahdigital.in</a>
               {' · '}
               <a href="tel:+919789961631" className="underline-offset-4 hover:underline">+91 97899 61631</a>

@@ -6,7 +6,7 @@ export default function SiteContact() {
   return (
     <SiteLayout
       title="Contact NUSI"
-      description="Email support@sirahdigital.in or call +91 97899 61631. NUSI is made by Sirah Digital, Pallavaram, Tamil Nadu."
+      description="Email support@sirahdigital.in or call +91 97899 61631. NUSI is practice management software for nutritionists and dietitians across India."
     >
       <Section className="pb-12 pt-20 sm:pt-24">
         <h1 className="text-[32px] font-normal leading-[1.12] tracking-[-0.035em] sm:text-[40px]">Contact us</h1>
@@ -44,14 +44,17 @@ export default function SiteContact() {
           </div>
 
           <div>
-            <h2 className="text-sm uppercase tracking-[0.1em] text-[#9b9b9b]">Registered office</h2>
-            <address className="mt-5 not-italic text-[15.5px] leading-relaxed text-[#6b6b6b]">
+            <h2 className="text-sm uppercase tracking-[0.1em] text-[#9b9b9b]">Company</h2>
+            {/* The registered address lives only on /terms, where it is legally
+                required. Spelling it out here too made Google treat NUSI as a
+                local business and print the office address in search results. */}
+            <div className="mt-5 text-[15.5px] leading-relaxed text-[#6b6b6b]">
               <b className="font-medium text-[#0c0c0c]">Sirah Digital</b><br />
-              SY No. 203/10B, Innov8, Featherlite The Address<br />
-              200 Feet Radial Road, Iswarya Nagar<br />
-              Pallavaram, Tamil Nadu 600044<br />
-              India
-            </address>
+              India<br />
+              <Link to="/terms" className="underline-offset-4 hover:underline">
+                Registered office details
+              </Link>
+            </div>
           </div>
         </div>
       </Section>

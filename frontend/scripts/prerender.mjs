@@ -137,21 +137,21 @@ const PAGES = [
   },
   {
     path: '/about',
-    title: 'About NUSI — Nutrition Practice Software by Sirah Digital, Chennai',
+    title: 'About NUSI — Nutrition Practice Software by Sirah Digital',
     description:
-      'NUSI is built by Sirah Digital in Chennai, with practising dietitians, for nutrition practices in India.',
+      'NUSI is built by Sirah Digital, with practising dietitians, for nutrition practices across India.',
     h1: 'About NUSI',
     intro:
-      'NUSI is practice software for nutritionists and dietitians, built by Sirah Digital in Chennai, India, with practising dietitians.',
+      'NUSI is practice software for nutritionists and dietitians, built by Sirah Digital in India, with practising dietitians.',
     sections: [],
   },
   {
     path: '/contact',
     title: 'Contact NUSI — Support for Nutrition Practice Software',
     description:
-      'Email support@sirahdigital.in or call +91 97899 61631. NUSI is made by Sirah Digital, Pallavaram, Tamil Nadu.',
+      'Email support@sirahdigital.in or call +91 97899 61631. NUSI is practice management software for nutritionists and dietitians across India.',
     h1: 'Contact us',
-    intro: 'Email support@sirahdigital.in or call +91 97899 61631. Sirah Digital, Pallavaram, Tamil Nadu, India.',
+    intro: 'Email support@sirahdigital.in or call +91 97899 61631. Monday to Saturday, 10am-7pm IST.',
     sections: [],
   },
   {
@@ -213,12 +213,11 @@ function jsonLd(page) {
     logo: `${ORIGIN}/nusi-logo.png`,
     email: 'support@sirahdigital.in',
     telephone: '+91-97899-61631',
-    address: {
-      '@type': 'PostalAddress',
-      addressLocality: 'Pallavaram',
-      addressRegion: 'Tamil Nadu',
-      addressCountry: 'IN',
-    },
+    // No PostalAddress on purpose: it made Google present NUSI as a local
+    // business and show the office address in results. NUSI is sold online
+    // across India, so only the country is declared. The registered address
+    // stays on /terms and /privacy, where it is legally required.
+    address: { '@type': 'PostalAddress', addressCountry: 'IN' },
     parentOrganization: { '@type': 'Organization', name: 'Sirah Digital' },
   };
   const app = {

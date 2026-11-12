@@ -107,7 +107,7 @@ export function SiteLayout({
         <div className="border-t border-[#ededea]">
           <div className="mx-auto flex max-w-5xl flex-wrap justify-between gap-3 px-6 py-5 text-xs text-[#9b9b9b]">
             <span>© {new Date().getFullYear()} Sirah Digital. All rights reserved.</span>
-            <span>Chennai, Tamil Nadu · support@sirahdigital.in</span>
+            <span>India · support@sirahdigital.in</span>
           </div>
         </div>
       </footer>
