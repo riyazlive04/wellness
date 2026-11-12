@@ -31,6 +31,7 @@ const SiteHome          = lazyWithPreload(() => import("./pages/site/Home"));
 const SiteFeatures      = lazyWithPreload(() => import("./pages/site/Features"));
 const SitePricing       = lazyWithPreload(() => import("./pages/site/Pricing"));
 const SiteAbout         = lazyWithPreload(() => import("./pages/site/About"));
+const SiteGuide         = lazyWithPreload(() => import("./pages/site/Guides"));
 const SiteContact       = lazyWithPreload(() => import("./pages/site/Contact"));
 const SiteTerms         = lazyWithPreload(() => import("./pages/site/Legal").then((m) => ({ default: m.SiteTerms })));
 const SitePrivacy       = lazyWithPreload(() => import("./pages/site/Legal").then((m) => ({ default: m.SitePrivacy })));
@@ -190,6 +191,7 @@ function RoutePrefetcher() {
   useEffect(() => {
     const isPublic =
       pathname === '/' || SITE_PATHS.includes(pathname as (typeof SITE_PATHS)[number]) ||
+      pathname.startsWith('/learn/') ||
       pathname.startsWith('/auth') || pathname.startsWith('/reset') ||
       pathname.startsWith('/join') || pathname.startsWith('/team-invite') ||
       pathname.startsWith('/p/') ||
@@ -237,6 +239,9 @@ const App = () => (
                 <Route path="/pricing"       element={<SitePricing />} />
                 <Route path="/about"         element={<SiteAbout />} />
                 <Route path="/contact"       element={<SiteContact />} />
+                {/* Search landing pages; each slug must also be in prerender.mjs or it is not
+                    indexed. NOT /guides/ - that is the in-app knowledge base PDFs. */}
+                <Route path="/learn/:slug" element={<SiteGuide />} />
                 <Route path="/terms"         element={<SiteTerms />} />
                 <Route path="/privacy"       element={<SitePrivacy />} />
                 <Route path="/refunds"       element={<SiteRefunds />} />

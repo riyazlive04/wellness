@@ -22,6 +22,15 @@ export const SITE_NAV = [
   { to: '/about', label: 'About' },
 ] as const;
 
+/** Search landing pages. Linked from the footer so they are not orphans:
+ *  a page nothing links to is crawled late and ranks poorly. */
+const LEARN = [
+  { to: '/learn/diet-chart-software', label: 'Diet chart software' },
+  { to: '/learn/nutrition-practice-management-software', label: 'Practice management' },
+  { to: '/learn/client-management-software-for-nutritionists', label: 'Client management' },
+  { to: '/learn/how-to-manage-nutrition-clients-online', label: 'Managing clients online' },
+] as const;
+
 const LEGAL = [
   { to: '/terms', label: 'Terms' },
   { to: '/privacy', label: 'Privacy' },
@@ -80,7 +89,7 @@ export function SiteLayout({
       <main>{children}</main>
 
       <footer className="border-t border-[#ededea]">
-        <div className="mx-auto grid max-w-5xl gap-8 px-6 py-12 sm:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="mx-auto grid max-w-5xl gap-8 px-6 py-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           <div>
             <div className="flex items-center gap-2.5 text-[15px] font-semibold tracking-[-0.03em]">
               <img src="/nusi-mark.png" alt="" className="h-5 w-5 rounded-full" />
@@ -96,6 +105,12 @@ export function SiteLayout({
               <Link key={l.to} to={l.to} className="text-[#6b6b6b] transition-colors hover:text-[#0c0c0c]">{l.label}</Link>
             ))}
             <Link to="/booking-page" className="text-[#6b6b6b] transition-colors hover:text-[#0c0c0c]">Book a demo</Link>
+          </nav>
+          <nav className="grid content-start gap-2.5 text-sm">
+            <span className="text-xs uppercase tracking-[0.1em] text-[#9b9b9b]">Learn</span>
+            {LEARN.map((l) => (
+              <Link key={l.to} to={l.to} className="text-[#6b6b6b] transition-colors hover:text-[#0c0c0c]">{l.label}</Link>
+            ))}
           </nav>
           <nav className="grid content-start gap-2.5 text-sm">
             <span className="text-xs uppercase tracking-[0.1em] text-[#9b9b9b]">Legal</span>

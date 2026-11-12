@@ -24,6 +24,8 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { GUIDES } from '../src/pages/site/guides.data.mjs';
+
 const DIST = resolve(dirname(fileURLToPath(import.meta.url)), '..', process.argv[2] || 'dist');
 const ORIGIN = 'https://nusi.in';
 const OG_IMAGE = `${ORIGIN}/og-nusi.jpg`;
@@ -201,6 +203,20 @@ const PAGES = [
       ]],
     ],
   },
+
+  /* Search landing pages. Copy comes from src/pages/site/guides.data.mjs so the
+     prerendered HTML and the React page can never disagree. */
+  ...GUIDES.map((g) => ({
+    path: `/learn/${g.slug}`,
+    title: g.title,
+    description: g.description,
+    h1: g.h1,
+    intro: g.intro,
+    sections: [
+      ...g.sections.map((s) => [s.heading, s.body]),
+      ['Questions', g.faq.map((f) => `${f.q} ${f.a}`)],
+    ],
+  })),
 ];
 
 /** Organization + SoftwareApplication, so search engines can show rich results. */
@@ -253,7 +269,11 @@ function body(page) {
   }
   parts.push(
     '<nav><a href="/home">Home</a> <a href="/features">Features</a> <a href="/pricing">Pricing</a> ' +
-      '<a href="/about">About</a> <a href="/contact">Contact</a> <a href="/booking-page">Book a demo</a></nav>',
+      '<a href="/about">About</a> <a href="/contact">Contact</a> <a href="/booking-page">Book a demo</a>' +
+      // The search landing pages link to each other here too: a page nothing
+      // links to is crawled late, if at all.
+      GUIDES.map((g) => ` <a href="/learn/${g.slug}">${esc(g.h1)}</a>`).join('') +
+      '</nav>',
   );
   return parts.join('\n      ');
 }
