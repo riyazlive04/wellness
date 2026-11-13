@@ -15,7 +15,7 @@ import {
   ShieldCheck, BellRing, FileSpreadsheet, MessageCircle, CalendarClock,
   LayoutTemplate, ClipboardList, UserMinus, Clock,
   Smartphone, Users, HeartHandshake, LayoutDashboard, Stethoscope, FileText,
-  ChevronDown,
+  ChevronDown, Instagram,
 } from 'lucide-react';
 import {
   BrandMark,
@@ -24,6 +24,8 @@ import {
   stagger,
   Wordmark,
 } from '@/design-system';
+import { INSTAGRAM_HANDLE, INSTAGRAM_URL, PLAY_URL } from '@/modules/site/links';
+
 import { HeroSection } from './landing/HeroSection';
 import { LeadForm } from './landing/LeadForm';
 import { HowSteps } from './landing/HowSteps';
@@ -500,6 +502,38 @@ export default function SirahLanding() {
         <HowSteps steps={steps} />
       </section>
 
+      {/* The client app + social. Placed after "How it works" so it lands once
+          the visitor understands the product, and before the demo video. */}
+      <section className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
+        <Reveal>
+          <div className="grid gap-7 rounded-3xl border border-teal-600/20 bg-teal-500/[0.07] px-7 py-8 dark:border-teal-400/20 dark:bg-teal-400/[0.06] sm:px-9 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-10">
+            <div>
+              <Eyebrow>The client app</Eyebrow>
+              <h2 className="mt-3 max-w-[22ch] text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+                Your clients get an app in your name.
+              </h2>
+              <p className="mt-3 max-w-[50ch] text-sm text-foreground/65 md:text-base">
+                Meal plan, reminders, food diary and chat with you — free with every plan, on Android.
+              </p>
+            </div>
+
+            <div className="grid justify-items-start gap-3 lg:justify-items-end">
+              <PlayBadge />
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noreferrer noopener"
+                onClick={() => trackButtonClick('band_instagram')}
+                className="inline-flex items-center gap-2 rounded-xl border border-foreground/15 bg-background/80 px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:border-teal-500/40 hover:text-foreground"
+              >
+                <Instagram className="h-[18px] w-[18px]" aria-hidden />
+                Follow {INSTAGRAM_HANDLE}
+              </a>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
       {/* Product demo - the new-nutritionist onboarding walkthrough, as a
           marketing tutorial. Silent screen recording with burned-in captions,
           so it autoplays muted + loops when scrolled into view. */}
@@ -662,9 +696,14 @@ export default function SirahLanding() {
             <BrandMark size={20} animated={false} />
             <span>NUSI · Practice management for nutritionists · by Sirah Digital</span>
           </a>
-          <div className="flex items-center gap-6">
-            <a href="https://sirahdigital.in/privacy" target="_blank" rel="noreferrer" onClick={() => trackButtonClick('footer_privacy')} className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Privacy</a>
-            <a href="https://sirahdigital.in/terms" target="_blank" rel="noreferrer" onClick={() => trackButtonClick('footer_terms')} className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Terms</a>
+          <div className="flex flex-wrap items-center justify-center gap-5 md:gap-6">
+            <a href={PLAY_URL} target="_blank" rel="noreferrer noopener" onClick={() => trackButtonClick('footer_play')} className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Client app</a>
+            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer noopener" onClick={() => trackButtonClick('footer_instagram')} aria-label="NUSI on Instagram" className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">
+              <Instagram className="h-4 w-4" aria-hidden />
+            </a>
+            <a href="/privacy" onClick={() => trackButtonClick('footer_privacy')} className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Privacy</a>
+            <a href="/terms" onClick={() => trackButtonClick('footer_terms')} className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Terms</a>
+            <a href="/refunds" onClick={() => trackButtonClick('footer_refunds')} className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Refunds</a>
             <a href="mailto:support@sirahdigital.in" onClick={() => trackButtonClick('footer_contact')} className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Contact</a>
           </div>
         </div>
@@ -679,6 +718,38 @@ export default function SirahLanding() {
 const CARD_HOVER =
   'group transition-[transform,border-color,box-shadow] duration-300 hover:border-teal-500/40 ' +
   'hover:shadow-[0_22px_45px_-22px_rgba(85,142,25,0.45)] motion-safe:hover:-translate-y-1';
+
+/**
+ * "Get it on Google Play" for the client app.
+ *
+ * Drawn inline rather than loading Google's badge PNG: the official asset is a
+ * fixed-height image that goes soft on a high-DPI screen and would be a
+ * cross-origin request on every view. The four-colour mark and the wording are
+ * what the brand guidelines require.
+ */
+function PlayBadge() {
+  return (
+    <a
+      href={PLAY_URL}
+      target="_blank"
+      rel="noreferrer noopener"
+      onClick={() => trackButtonClick('band_google_play')}
+      className="inline-flex items-center gap-2.5 rounded-xl bg-foreground px-4 py-2.5 text-background transition-opacity hover:opacity-85"
+      aria-label="Get the NUSI client app on Google Play"
+    >
+      <svg viewBox="0 0 24 24" className="h-[22px] w-[22px] flex-none" aria-hidden focusable="false">
+        <path fill="#34A853" d="M3.6 20.5l10-10 2.6 2.6-10.9 6.3a1.7 1.7 0 0 1-1.7 0z" />
+        <path fill="#EA4335" d="M3.6 3.5l10 10 2.6-2.6L5.3 4.6a1.7 1.7 0 0 0-1.7-.1z" />
+        <path fill="#FBBC04" d="M20.3 10.6l-3-1.7-2.9 2.9 2.9 2.9 3-1.7a1.7 1.7 0 0 0 0-2.4z" />
+        <path fill="#4285F4" d="M3.6 3.5c-.1.2-.1.4-.1.6v16.8l10-8.4z" />
+      </svg>
+      <span className="leading-[1.15]">
+        <span className="block text-[9.5px] uppercase tracking-[0.06em] opacity-75">Get it on</span>
+        <span className="block text-sm font-semibold">Google Play</span>
+      </span>
+    </a>
+  );
+}
 
 /**
  * Section label shown above each heading - a tinted green pill with a dot, sized
