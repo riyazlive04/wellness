@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Section, SiteLayout } from '@/modules/site/SiteLayout';
 
 /** Last reviewed. Update when the wording changes, not on every deploy. */
-const UPDATED = '17 October 2026';
+const UPDATED = '13 November 2026';
 
 const COMPANY = 'Sirah Digital';
 const ADDRESS = 'SY No. 203/10B, Innov8, Featherlite The Address, 200 Feet Radial Road, Iswarya Nagar, Pallavaram, Tamil Nadu 600044, India';
@@ -59,6 +59,33 @@ export function SiteTerms() {
       </section>
 
       <section>
+        <H>Your professional practice</H>
+        <p>
+          You practise in your own name and under your own qualifications. NUSI records and
+          communicates what you decide; it does not decide anything for you, and we are not a
+          party to the relationship between you and your client.
+        </p>
+        <p className="mt-3">
+          <b className="font-medium text-[#0c0c0c]">You are solely responsible for your professional
+          conduct.</b> That includes:
+        </p>
+        <UL items={[
+          'Holding the qualifications, registration and licences your practice requires, and keeping them current.',
+          'The accuracy and suitability of every plan, recommendation and piece of advice you give, including anything you build using features that suggest or estimate.',
+          'Any product you recommend, supply or sell to a client — including nutritional supplements — and the licences, labelling, safety and claims that apply to it under Indian law.',
+          'Obtaining your client’s informed consent, and referring them to a doctor where their condition calls for one.',
+          'Any complaint, claim, investigation or disciplinary proceeding brought by a client, a regulator or anyone else in connection with your practice.',
+        ]} />
+        <p className="mt-3">
+          Supplements are a point worth stating plainly: practitioners may use NUSI to record and
+          invoice supplements they recommend or sell, but doing so is your decision and your
+          responsibility. We do not supply, endorse, verify or take any part in those products, and
+          we are not liable for them or for anything that follows from them. Selling medicines or
+          prescription drugs through NUSI remains prohibited.
+        </p>
+      </section>
+
+      <section>
         <H>Your account</H>
         <UL items={[
           'You must give accurate details and keep them current.',
@@ -108,7 +135,7 @@ export function SiteTerms() {
           'Use NUSI for anything unlawful, or to harm or mislead a client.',
           'Upload malware, attempt to breach our systems, or access another practice’s data.',
           'Resell or white-label NUSI without our written agreement.',
-          'Use it to sell medicines or prescription drugs.',
+          'Use it to sell medicines or prescription drugs. (Supplements are treated separately — see “Your professional practice”.)',
         ]} />
         <p className="mt-3">
           We may suspend an account that breaches this, and will tell you why.
@@ -127,8 +154,10 @@ export function SiteTerms() {
         <H>Liability</H>
         <p>
           NUSI is provided as it is. To the extent the law allows, we are not liable for indirect or
-          consequential loss, lost profits, or loss arising from clinical decisions you make. Our total
-          liability in any twelve-month period is limited to what you paid us in that period.
+          consequential loss, lost profits, or loss arising from your practice — including the clinical
+          decisions you make, the advice you give, and any product or supplement you recommend, supply
+          or sell. Our total liability in any twelve-month period is limited to what you paid us in
+          that period.
         </p>
         <p className="mt-3">
           Nothing here limits liability that cannot be limited by law.
@@ -239,6 +268,22 @@ export function SitePrivacy() {
           You can ask us to show you the data we hold about you, correct it, export it, or delete it.
           Write to {EMAIL} and we will respond within 30 days. A client who wants their record changed
           or removed should ask their nutritionist, who controls it; we will help the nutritionist do it.
+        </p>
+      </section>
+
+      <section>
+        <H>Health data and your professional responsibility</H>
+        <p>
+          Much of what NUSI holds is health information about a client: measurements, blood sugar and
+          blood pressure readings, conditions, medicines and supplements they take, and what you have
+          advised. You decide what is recorded and why, and you are responsible for having a lawful
+          basis and your client’s consent to record it.
+        </p>
+        <p className="mt-3">
+          We process this data for you, as your processor. We do not use it to advise anyone, and we
+          take no part in the clinical or commercial decisions you make from it — including any
+          supplement or product you recommend or sell. Those responsibilities are set out in our{' '}
+          <a href="/terms" className="underline underline-offset-4">Terms of Service</a>.
         </p>
       </section>
 
