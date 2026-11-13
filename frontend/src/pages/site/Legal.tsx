@@ -210,14 +210,21 @@ export function SitePrivacy() {
 
       <section>
         <H>Who we share it with</H>
-        <p>Only service providers who help run NUSI, and only what they need:</p>
+        <p>
+          Only the service providers who help us run NUSI, and only the data each one needs
+          to do its job. None of them may use it for their own purposes.
+        </p>
         <UL items={[
-          'Supabase — database and file storage.',
-          'Razorpay — payment processing.',
-          'Resend — transactional email.',
-          'Google — Firebase push notifications, and Calendar if you book demo calls with us.',
-          'AI providers — for features you choose to use, such as plate analysis. Content sent for processing is not used to train their models.',
+          'Cloud hosting and database — storing your practice’s records and files.',
+          'Payment processing — taking subscription payments and issuing invoices. Card details go straight to the processor and never reach us.',
+          'Email and notification delivery — sending account emails and app notifications.',
+          'AI processing — only for features you choose to use, such as plate analysis. Content sent for processing is not used to train those models.',
         ]} />
+        <p className="mt-3">
+          Each provider is bound by contract to protect the data and to use it only for the
+          service they provide to us. If you would like the current list by name, write to{' '}
+          {EMAIL} and we will send it.
+        </p>
         <p className="mt-3">We also disclose data where the law requires it.</p>
       </section>
 
