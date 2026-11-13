@@ -50,6 +50,21 @@ const OWNED_VARS = [
   // The 50-950 scale behind Tailwind's teal-*; see SCALE below.
   ...['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950']
     .map((step) => `--brand-${step}`),
+  '--topbar-from', '--topbar-via', '--topbar-to', '--topbar-on-white',
+];
+
+/**
+ * The topbar gradient, measured from the NUSI bar it replaces. Deliberately a
+ * deeper, bluer green than the brand scale, so the ramp is kept and only the
+ * HUE follows the practice - a bar derived straight from a pale brand colour
+ * would wash out and lose its white text contrast.
+ */
+const TOPBAR: Array<[name: string, sat: number, lig: number]> = [
+  ['from', 55, 27], ['via', 51, 37], ['to', 43, 52], ['on-white', 53, 29],
+];
+
+const TOPBAR_DARK: Array<[name: string, sat: number, lig: number]> = [
+  ['from', 50, 13], ['via', 54, 23], ['to', 40, 31], ['on-white', 53, 29],
 ];
 
 /**
@@ -100,6 +115,13 @@ function deriveVars(primaryHex: string, accentHex: string, isDark: boolean): Rec
       SCALE.map(([step, sat, lig]) => [
         `--brand-${step}`,
         `${ph} ${clamp(Math.round((sat * ps) / REF_SAT), 12, 95)}% ${lig}%`,
+      ]),
+    ),
+    // The topbar gradient, on the practice's hue.
+    ...Object.fromEntries(
+      (isDark ? TOPBAR_DARK : TOPBAR).map(([name, sat, lig]) => [
+        `--topbar-${name}`,
+        `${ph} ${clamp(Math.round((sat * ps) / REF_SAT), 15, 90)}% ${lig}%`,
       ]),
     ),
   };

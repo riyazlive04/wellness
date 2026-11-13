@@ -46,8 +46,10 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
   };
 
   return (
-    // The NUSI green across every page: a gentle gradient bar with white text.
-    <header className="sticky top-0 z-20 bg-gradient-to-r from-[#1f6b34] via-[#2f8f46] to-[#6fb84f] text-white shadow-[0_6px_20px_-12px_rgba(16,60,30,0.6)] dark:from-[#10301a] dark:via-[#1b5a2d] dark:to-[#2f6e30]">
+    // A gentle gradient bar with white text. The stops come from CSS variables
+    // (index.css) rather than fixed hex, so a white-labelled practice's colour
+    // reaches the bar too - it was the one green left on a coral dashboard.
+    <header className="sticky top-0 z-20 bg-gradient-to-r from-[hsl(var(--topbar-from))] via-[hsl(var(--topbar-via))] to-[hsl(var(--topbar-to))] text-white shadow-[0_6px_20px_-12px_rgba(16,60,30,0.6)]">
       <div className="flex h-14 items-center gap-3 px-4 md:px-6">
         {/* Mobile hamburger */}
         <button
@@ -149,7 +151,7 @@ function PlanBadge() {
     return (
       <span className="flex flex-shrink-0 items-center gap-1.5">
         <Link to="/billing" className={className} title="Your plan - view billing">{content}</Link>
-        <Link to="/billing" className="hidden rounded-full bg-white px-3 py-1 text-xs font-bold text-[#23733a] shadow-sm transition-transform hover:scale-[1.03] sm:inline-block">
+        <Link to="/billing" className="hidden rounded-full bg-white px-3 py-1 text-xs font-bold text-[hsl(var(--topbar-on-white))] shadow-sm transition-transform hover:scale-[1.03] sm:inline-block">
           Upgrade
         </Link>
       </span>
@@ -176,7 +178,7 @@ function PracticePill({ practiceName, logoUrl }: { practiceName: string; logoUrl
         {logoUrl ? (
           <img src={logoUrl} alt="" className="h-full w-full object-contain" />
         ) : (
-          <span className="text-[11px] font-bold text-[#23733a]">{practiceName.charAt(0).toUpperCase()}</span>
+          <span className="text-[11px] font-bold text-[hsl(var(--topbar-on-white))]">{practiceName.charAt(0).toUpperCase()}</span>
         )}
       </span>
       <span className="hidden max-w-[260px] truncate font-bold sm:inline">{practiceName}</span>

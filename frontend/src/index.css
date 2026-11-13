@@ -53,6 +53,14 @@
     --brand-900: 93 52% 19%;
     --brand-950: 95 65% 10%;
 
+    /* Topbar gradient. A deeper, bluer green than the brand scale on purpose;
+       useApplyBrandTheme swaps the HUE for a white-labelled practice and keeps
+       this ramp, so the bar follows the brand without losing its depth. */
+    --topbar-from: 137 55% 27%;
+    --topbar-via:  134 51% 37%;
+    --topbar-to:   102 43% 52%;
+    --topbar-on-white: 137 53% 29%;
+
     --primary: 89 70% 33%;              /* NUSI leaf green */
     --primary-foreground: 0 0% 100%;
 
@@ -115,6 +123,11 @@
 
     --popover: 222 14% 10%;             /* #15171C */
     --popover-foreground: 0 0% 100%;
+
+    --topbar-from: 139 50% 13%;
+    --topbar-via:  137 54% 23%;
+    --topbar-to:   121 40% 31%;
+    --topbar-on-white: 137 53% 29%;
 
     --primary: 88 62% 40%;
     --primary-foreground: 0 0% 100%;

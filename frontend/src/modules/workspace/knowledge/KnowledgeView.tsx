@@ -220,7 +220,7 @@ function CompleteGuideCard({ guide: c }: { guide: CompleteGuide }) {
             <span className="rounded-lg bg-white/15 px-2.5 py-1">PDF · {(c.kb / 1024).toFixed(1)} MB</span>
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
-            <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#1f6b34] shadow-sm hover:bg-white/90">
+            <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[hsl(var(--topbar-on-white))] shadow-sm hover:bg-white/90">
               <BookOpen className="h-4 w-4" /> Open guide
             </a>
             <a href={href} download className="inline-flex items-center gap-2 rounded-xl border border-white/40 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10">
