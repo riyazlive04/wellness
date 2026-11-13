@@ -1,6 +1,4 @@
-import type { ReactNode } from 'react';
-
-import { Section, SiteLayout } from '@/modules/site/SiteLayout';
+import { H, LegalDoc, UL } from './LegalChrome';
 
 /** Last reviewed. Update when the wording changes, not on every deploy. */
 const UPDATED = '13 November 2026';
@@ -10,31 +8,11 @@ const ADDRESS = 'SY No. 203/10B, Innov8, Featherlite The Address, 200 Feet Radia
 const EMAIL = 'support@sirahdigital.in';
 const PHONE = '+91 97899 61631';
 
-function Doc({ title, description, children }: { title: string; description: string; children: ReactNode }) {
-  return (
-    <SiteLayout title={`${title} — NUSI`} description={description}>
-      <Section className="pb-16 pt-20 sm:pt-24">
-        <h1 className="text-[32px] font-normal leading-[1.12] tracking-[-0.035em] sm:text-[38px]">{title}</h1>
-        <p className="mt-4 text-[14px] text-[#9b9b9b]">Last updated {UPDATED}</p>
-        <div className="mt-10 max-w-[70ch] space-y-8 text-[15.5px] leading-relaxed text-[#45453f]">{children}</div>
-      </Section>
-    </SiteLayout>
-  );
-}
-
-function H({ children }: { children: ReactNode }) {
-  return <h2 className="mb-2 text-[17px] font-medium tracking-[-0.01em] text-[#0c0c0c]">{children}</h2>;
-}
-
-const UL = ({ items }: { items: string[] }) => (
-  <ul className="mt-2 list-disc space-y-1.5 pl-5">{items.map((i) => <li key={i}>{i}</li>)}</ul>
-);
-
 /* ─────────────────────────── Terms ─────────────────────────── */
 
 export function SiteTerms() {
   return (
-    <Doc title="Terms of Service"
+    <LegalDoc updated={UPDATED} title="Terms of Service"
       description="The terms on which Sirah Digital provides the NUSI practice software to nutrition professionals.">
       <section>
         <p>
@@ -176,7 +154,7 @@ export function SiteTerms() {
         <H>Contact</H>
         <p>{COMPANY} · {EMAIL} · {PHONE}<br />{ADDRESS}</p>
       </section>
-    </Doc>
+    </LegalDoc>
   );
 }
 
@@ -184,7 +162,7 @@ export function SiteTerms() {
 
 export function SitePrivacy() {
   return (
-    <Doc title="Privacy Policy"
+    <LegalDoc updated={UPDATED} title="Privacy Policy"
       description="How Sirah Digital collects, uses and protects data in NUSI, including the health information nutritionists record about their clients.">
       <section>
         <p>
@@ -302,7 +280,7 @@ export function SitePrivacy() {
           by email. Questions: {EMAIL} · {PHONE}<br />{COMPANY}, {ADDRESS}
         </p>
       </section>
-    </Doc>
+    </LegalDoc>
   );
 }
 
@@ -310,7 +288,7 @@ export function SitePrivacy() {
 
 export function SiteRefunds() {
   return (
-    <Doc title="Refund and Cancellation Policy"
+    <LegalDoc updated={UPDATED} title="Refund and Cancellation Policy"
       description="NUSI's refund policy: a 7-day refund window on your first subscription payment, and how to cancel.">
       <section>
         <p>
@@ -388,6 +366,6 @@ export function SiteRefunds() {
         <H>Contact</H>
         <p>{COMPANY} · {EMAIL} · {PHONE}<br />{ADDRESS}</p>
       </section>
-    </Doc>
+    </LegalDoc>
   );
 }
