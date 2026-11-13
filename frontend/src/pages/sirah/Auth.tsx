@@ -502,7 +502,7 @@ export default function SirahAuth() {
                   className="na-tab"
                   onClick={() => setRole(r)}
                 >
-                  {r === 'client' ? 'Client' : 'Nutritionist'}
+                  {r === 'client' ? 'Client login' : 'Nutritionist login'}
                 </button>
               ))}
             </div>
@@ -618,9 +618,15 @@ const FOREST_CSS = `
 .na-brand img { width: 34px; height: 34px; border-radius: 9px; box-shadow: 0 4px 12px rgb(0 0 0 / .3); }
 .na-tag { position: absolute; left: 28px; right: 28px; bottom: 26px; z-index: 2; margin: 0; max-width: 26ch; color: #fff; font-size: 14px; font-weight: 500; line-height: 1.5; text-shadow: 0 1px 8px rgb(0 0 0 / .35); }
 .na-tabs { position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 3; display: grid; gap: 22px; }
-.na-tab { position: relative; width: 180px; height: 62px; padding: 0 0 0 34px; border: 0; border-radius: 31px 0 0 31px; background: none; text-align: left; font: 600 15px/1 inherit; font-family: inherit; letter-spacing: .06em; text-transform: uppercase; color: rgb(255 255 255 / .88); cursor: pointer; transition: color .25s; }
-.na-tab:hover { color: #fff; }
-.na-tab[aria-selected="true"] { background: #fff; color: #1b241d; }
+.na-tab { position: relative; width: 208px; height: 62px; padding: 0 0 0 30px; border: 0; border-radius: 31px 0 0 31px; background: rgb(255 255 255 / .14); text-align: left; font: 600 14px/1 inherit; font-family: inherit; letter-spacing: .05em; text-transform: uppercase; color: rgb(255 255 255 / .92); cursor: pointer; transition: background .22s, color .22s, transform .22s; }
+/* A chevron, so an unselected tab reads as something you press rather than a
+   label. Hidden on the selected one, which is already the open panel. */
+.na-tab[aria-selected="false"]::after { content: ""; position: absolute; right: 26px; top: 50%; width: 7px; height: 7px; margin-top: -4px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); opacity: .55; transition: opacity .22s, transform .22s; }
+.na-tab:hover { background: rgb(255 255 255 / .26); color: #fff; transform: translateX(-4px); }
+.na-tab[aria-selected="false"]:hover::after { opacity: .9; transform: rotate(-45deg) translate(2px, 2px); }
+.na-tab:active { transform: translateX(-1px); }
+.na-tab[aria-selected="true"] { background: #fff; color: #1b241d; transform: none; }
+.na-tab[aria-selected="true"]:hover { background: #fff; transform: none; }
 .na-tab[aria-selected="true"]::before, .na-tab[aria-selected="true"]::after { content: ""; position: absolute; right: 0; width: 30px; height: 30px; pointer-events: none; }
 .na-tab[aria-selected="true"]::before { top: -30px; border-bottom-right-radius: 30px; box-shadow: 10px 10px 0 10px #fff; }
 .na-tab[aria-selected="true"]::after { bottom: -30px; border-top-right-radius: 30px; box-shadow: 10px -10px 0 10px #fff; }
