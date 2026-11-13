@@ -47,7 +47,27 @@ const OWNED_VARS = [
   '--sidebar-primary', '--sidebar-primary-foreground', '--sidebar-ring',
   '--brand-blue', '--brand-violet', '--brand-magenta',
   '--brand-primary', '--brand-accent',
+  // The 50-950 scale behind Tailwind's teal-*; see SCALE below.
+  ...['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950']
+    .map((step) => `--brand-${step}`),
 ];
+
+/**
+ * Lightness and saturation of the NUSI green at each step, measured from the
+ * hex scale this replaced. A practice's colour is re-expressed on this curve:
+ * its HUE is taken, its saturation scaled against the reference, and the
+ * lightness ramp kept - so a pale 50 stays pale and a deep 900 stays deep
+ * whatever colour is chosen. Picking a dark brand colour must not turn every
+ * pale tinted surface in the app into a solid block.
+ */
+const SCALE: Array<[step: string, sat: number, lig: number]> = [
+  ['50', 64, 95], ['100', 65, 88], ['200', 64, 77], ['300', 63, 63],
+  ['400', 58, 51], ['500', 68, 41], ['600', 70, 33], ['700', 66, 26],
+  ['800', 57, 22], ['900', 52, 19], ['950', 65, 10],
+];
+
+/** Saturation of the reference green at its mid step, for scaling. */
+const REF_SAT = 70;
 
 /** Derive the full set of theme triples from one primary + accent colour. */
 function deriveVars(primaryHex: string, accentHex: string, isDark: boolean): Record<string, string> {
@@ -74,6 +94,14 @@ function deriveVars(primaryHex: string, accentHex: string, isDark: boolean): Rec
     // Hex custom vars consumed by the client-portal shell.
     '--brand-primary': primaryHex,
     '--brand-accent': acc,
+    // The whole teal-* scale, on the practice's hue. This is what makes the
+    // ~2,000 teal-* classes across the app follow the brand colour.
+    ...Object.fromEntries(
+      SCALE.map(([step, sat, lig]) => [
+        `--brand-${step}`,
+        `${ph} ${clamp(Math.round((sat * ps) / REF_SAT), 12, 95)}% ${lig}%`,
+      ]),
+    ),
   };
 }
 

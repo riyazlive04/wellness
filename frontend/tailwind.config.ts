@@ -67,18 +67,28 @@ export default {
         "border-strong": "hsl(var(--border-strong))",
         // NUSI brand green (from the logo mark). Overrides Tailwind's stock teal so
         // every existing `teal-*` brand accent across the app follows the logo.
+        //
+        // Read from CSS variables rather than fixed hex: a white-labelled
+        // practice saves one colour, and useApplyBrandTheme() rewrites the
+        // --brand-* scale, so all ~2,000 teal-* classes across the app follow
+        // it. With fixed hex the colours were baked in at build time and no
+        // runtime theme could reach them - the practice's colour only showed
+        // on the few components that happened to use `bg-primary`.
+        //
+        // Defaults in index.css are the exact HSL of the hex that used to be
+        // here, so an un-branded workspace renders identically.
         teal: {
-          50: '#F3FAE8',
-          100: '#E4F4CC',
-          200: '#CAEA9E',
-          300: '#A9DC66',
-          400: '#8BCB3A',
-          500: '#6DB022',
-          600: '#558E19',
-          700: '#436F17',
-          800: '#375818',
-          900: '#2F4B18',
-          950: '#172A09',
+          50:  'hsl(var(--brand-50))',
+          100: 'hsl(var(--brand-100))',
+          200: 'hsl(var(--brand-200))',
+          300: 'hsl(var(--brand-300))',
+          400: 'hsl(var(--brand-400))',
+          500: 'hsl(var(--brand-500))',
+          600: 'hsl(var(--brand-600))',
+          700: 'hsl(var(--brand-700))',
+          800: 'hsl(var(--brand-800))',
+          900: 'hsl(var(--brand-900))',
+          950: 'hsl(var(--brand-950))',
         },
         // SIRAH LIFE brand colors — same value in both themes
         brand: {
