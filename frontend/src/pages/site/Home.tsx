@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, BarChart3, CalendarCheck, CreditCard, MessageSquare,
+  ArrowRight, BarChart3, CalendarCheck, CreditCard, Instagram, MessageSquare,
   Smartphone, Sparkles, UtensilsCrossed,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { INSTAGRAM_HANDLE, INSTAGRAM_URL, PLAY_URL } from '@/modules/site/links';
 import { Section, SiteLayout } from '@/modules/site/SiteLayout';
 
 const G = '#436F17';        // the logo green
@@ -264,6 +265,39 @@ export default function SiteHome() {
         </div>
       </Section>
 
+      {/* ── The client app + social ─────────────────────────────── */}
+      <Section className="pb-4 pt-2 sm:pb-6">
+        <Reveal>
+          <div
+            className="grid gap-7 rounded-2xl px-7 py-8 sm:px-9 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-10"
+            style={{ background: G_PALE, border: `1px solid ${G_EDGE}` }}
+          >
+            <div>
+              <SectionLabel>The client app</SectionLabel>
+              <h2 className="mt-3 max-w-[22ch] text-[26px] font-normal leading-tight tracking-[-0.03em] sm:text-[30px]">
+                Your clients get an app in your name.
+              </h2>
+              <p className="mt-3 max-w-[48ch] text-[15px] leading-relaxed text-[#5a5a56]">
+                Meal plan, reminders, food diary and chat with you — free with every plan, on Android.
+              </p>
+            </div>
+
+            <div className="grid justify-items-start gap-3 lg:justify-items-end">
+              <PlayBadge />
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex items-center gap-2 rounded-xl border border-[#dcdcd8] bg-white px-4 py-2.5 text-[14px] font-medium text-[#45453f] transition-colors hover:bg-[#fafaf9]"
+              >
+                <Instagram className="h-[18px] w-[18px]" aria-hidden />
+                Follow {INSTAGRAM_HANDLE}
+              </a>
+            </div>
+          </div>
+        </Reveal>
+      </Section>
+
       {/* ── Pricing ─────────────────────────────────────────────── */}
       <div className="border-y border-[#ededea] bg-[#fafaf9]">
         <Section className="py-16 sm:py-20">
@@ -349,6 +383,37 @@ export default function SiteHome() {
         </Reveal>
       </Section>
     </SiteLayout>
+  );
+}
+
+/**
+ * "Get it on Google Play".
+ *
+ * Drawn inline rather than loading Google's badge PNG: the official asset is
+ * a fixed-height image that goes soft on a high-DPI screen and would be a
+ * cross-origin request on every landing-page view. The four-colour triangle
+ * and the wording are what Google's brand guidelines actually require.
+ */
+function PlayBadge() {
+  return (
+    <a
+      href={PLAY_URL}
+      target="_blank"
+      rel="noreferrer noopener"
+      className="inline-flex items-center gap-2.5 rounded-xl bg-[#0c0c0c] px-4 py-2.5 text-white transition-opacity hover:opacity-85"
+      aria-label="Get the NUSI client app on Google Play"
+    >
+      <svg viewBox="0 0 24 24" className="h-[22px] w-[22px] flex-none" aria-hidden focusable="false">
+        <path fill="#34A853" d="M3.6 20.5l10-10 2.6 2.6-10.9 6.3a1.7 1.7 0 0 1-1.7 0z" />
+        <path fill="#EA4335" d="M3.6 3.5l10 10 2.6-2.6L5.3 4.6a1.7 1.7 0 0 0-1.7-.1z" />
+        <path fill="#FBBC04" d="M20.3 10.6l-3-1.7-2.9 2.9 2.9 2.9 3-1.7a1.7 1.7 0 0 0 0-2.4z" />
+        <path fill="#4285F4" d="M3.6 3.5c-.1.2-.1.4-.1.6v16.8l10-8.4z" />
+      </svg>
+      <span className="leading-[1.15]">
+        <span className="block text-[9.5px] uppercase tracking-[0.06em] opacity-75">Get it on</span>
+        <span className="block text-[14.5px] font-semibold">Google Play</span>
+      </span>
+    </a>
   );
 }
 
