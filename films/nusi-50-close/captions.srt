@@ -1,0 +1,158 @@
+1
+00:00:00,500 --> 00:00:04,500
+If you have come this far, you already
+agree with the diagnosis.
+
+2
+00:00:05,500 --> 00:00:08,500
+Your practice runs on six tools
+that do not talk to each other.
+
+3
+00:00:08,500 --> 00:00:11,500
+Your clients drift in week three
+and you find out at the refund.
+
+4
+00:00:11,500 --> 00:00:15,000
+Your evenings go to admin
+that should not need a human.
+
+5
+00:00:15,500 --> 00:00:20,000
+So the only question left is whether this one fixes it.
+Let me answer that with specifics, not adjectives.
+
+6
+00:00:20,500 --> 00:00:26,500
+One system holds every client record,
+so nothing lives in anybody's phone.
+
+7
+00:00:27,500 --> 00:00:32,000
+Your method becomes a versioned program
+you build once and deliver to hundreds.
+
+8
+00:00:32,000 --> 00:00:36,000
+One edit updates every active client,
+and nobody loses their progress.
+
+9
+00:00:36,500 --> 00:00:43,000
+The food science is Indian. IFCT-2017, 15 cooking
+methods, 48 retention factors, raw against as-consumed.
+
+10
+00:00:43,500 --> 00:00:47,500
+Your clients get an app
+they open every morning.
+
+11
+00:00:47,500 --> 00:00:53,000
+Habit rings, streaks, goals, a journal, progress,
+and meal logging by photograph or barcode.
+
+12
+00:00:53,500 --> 00:00:58,000
+Your mornings start with a brief,
+ranked by who is closest to quitting.
+
+13
+00:00:58,000 --> 00:01:00,000
+Not by who shouted loudest.
+
+14
+00:01:00,500 --> 00:01:06,500
+Automation chases the quiet ones for you, on rules
+you write, with a log of everything it did.
+
+15
+00:01:07,500 --> 00:01:15,000
+Billing runs on Razorpay with GST-compliant invoices,
+failed-payment retries, and a grace window.
+
+16
+00:01:15,500 --> 00:01:23,000
+And when you add staff or locations, the roles, the roll-ups,
+the audit log, the API and white-label are already there.
+
+17
+00:01:23,500 --> 00:01:28,000
+Starter, ₹3,999 a month.
+Growth, ₹8,999.
+
+18
+00:01:28,000 --> 00:01:32,000
+Scale Pro, ₹19,999.
+Two months free if you pay annually.
+
+19
+00:01:32,500 --> 00:01:35,000
+Now the risk, honestly.
+
+20
+00:01:35,500 --> 00:01:39,000
+The risk is that you spend
+a fortnight on a tool you abandon.
+
+21
+00:01:40,500 --> 00:01:43,000
+So here is how we remove it.
+
+22
+00:01:43,500 --> 00:01:49,500
+Fourteen days free. No card, so nothing
+can charge you by accident.
+
+23
+00:01:50,500 --> 00:01:54,500
+It is not a crippled demo either. 50 clients,
+5 team members, 500 AI credits.
+
+24
+00:01:54,500 --> 00:01:57,000
+Real limits, on the real product.
+
+25
+00:01:57,500 --> 00:02:02,000
+And you do not have to migrate anything.
+Ten clients and one program is a complete test.
+
+26
+00:02:05,500 --> 00:02:11,500
+At the end you will have four numbers. Who logged. Who held
+a streak. Who completed their tasks. And who you had to chase.
+
+27
+00:02:11,500 --> 00:02:15,500
+Compare them to the ten clients you left alone.
+
+28
+00:02:16,500 --> 00:02:21,500
+That is not a sales argument.
+That is an experiment, and you run it.
+
+29
+00:02:22,500 --> 00:02:25,500
+If the numbers are not better, close the tab.
+
+30
+00:02:25,500 --> 00:02:29,000
+You will have lost a fortnight and learned
+something about your own practice.
+
+31
+00:02:29,500 --> 00:02:34,500
+If they are better, you already know what
+to do with the rest of your client list.
+
+32
+00:02:35,500 --> 00:02:39,500
+NUSI. Built by Sirah Digital,
+for practices here.
+
+33
+00:02:40,500 --> 00:02:46,000
+Start the trial at nusi.in
+Run your practice, not your admin.

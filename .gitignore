@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 dist.zip
+# One-off build outputs (dist-auth, dist-seo, dist-theme...) - artifacts, never source.
+dist-*
 *.local
 
 # Environment files — NEVER commit. Contains secrets / DB keys.

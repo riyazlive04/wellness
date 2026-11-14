@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NUSI — 50 Video Sales Scripts</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/14.1.2/marked.min.js"></script>
+<style>
+  :root{
+    --bg:#f6f8f6; --panel:#fff; --ink:#15210d; --muted:#5e7350;
+    --line:#e2ebdc; --brand:#436F17; --soft:#F3FAE8; --edge:#E4F4CC;
+    --shadow:0 1px 2px rgba(21,33,13,.05),0 8px 24px rgba(21,33,13,.06);
+    --r:#e5484d; --y:#d9a216; --g:#2e9b4f;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0A0C10; --panel:#131711; --ink:#eaf2e2; --muted:#9bb08c;
+    --line:#242c1d; --brand:#8ec63f; --soft:#1a2113; --edge:#2a3620;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  }}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 "Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 18px;
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .brand{font-weight:800;font-size:15px;letter-spacing:-.01em;margin-right:auto}
+  .brand i{color:var(--brand);font-style:normal}
+  #q{border:1px solid var(--line);background:var(--bg);color:var(--ink);
+    padding:7px 13px;border-radius:999px;font-size:13.5px;width:230px;outline:none;font-family:inherit}
+  #q:focus{border-color:var(--brand)}
+  .seg{display:flex;gap:5px;flex-wrap:wrap}
+  .seg button{border:1px solid var(--line);background:transparent;color:var(--muted);
+    padding:6px 12px;border-radius:999px;font-size:12.5px;cursor:pointer;font-weight:600;font-family:inherit}
+  .seg button:hover{color:var(--ink);border-color:var(--brand)}
+  .seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+
+  .wrap{display:flex;gap:26px;max-width:1560px;margin:0 auto;padding:24px 18px 80px;align-items:flex-start}
+  nav{flex:0 0 310px;position:sticky;top:74px;max-height:calc(100vh - 100px);overflow:auto;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:var(--shadow)}
+  nav .bk{margin:13px 0 5px;padding:0 8px;font-size:10.5px;font-weight:800;color:var(--brand);
+    text-transform:uppercase;letter-spacing:.08em}
+  nav .bk:first-child{margin-top:2px}
+  nav a{display:flex;gap:8px;align-items:baseline;padding:6px 8px;border-radius:8px;
+    color:var(--ink);text-decoration:none;font-size:13.5px;line-height:1.35}
+  nav a:hover{background:var(--soft)}
+  nav a.on{background:var(--soft);color:var(--brand);font-weight:700}
+  nav a b{flex:0 0 22px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:700;font-size:12px}
+  nav a.on b{color:var(--brand)}
+  nav a i{margin-left:auto;font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap}
+
+  main{flex:1 1 auto;min-width:0}
+  .script{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:26px 30px;box-shadow:var(--shadow);margin-bottom:18px;scroll-margin-top:84px}
+  .shead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+  .num{font-size:12px;font-weight:800;color:#fff;background:var(--brand);
+    padding:3px 9px;border-radius:999px;letter-spacing:.03em}
+  .stitle{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:0}
+  .pill{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;
+    background:var(--soft);border:1px solid var(--edge);color:var(--muted)}
+  .pill.r{color:var(--r)} .pill.y{color:var(--y)} .pill.g{color:var(--g)}
+  .meta{font-size:13px;color:var(--muted);margin:2px 0 14px}
+  .meta b{color:var(--ink);font-weight:650}
+
+  .script table{border-collapse:collapse;width:100%;font-size:14px;margin:0}
+  .script th,.script td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  .script th{background:var(--soft);font-size:11px;font-weight:800;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--brand)}
+  .script th:nth-child(1){width:38px} .script th:nth-child(2){width:46%}
+  .script td:nth-child(1){color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px}
+  .script td:nth-child(2){font-weight:550}
+  .script td:nth-child(3){color:var(--muted);font-size:13.3px}
+  .script tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--soft) 40%,transparent)}
+
+  .doc{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:26px 30px;box-shadow:var(--shadow);margin-bottom:18px}
+  .doc h1{font-size:25px;letter-spacing:-.02em;margin:0 0 .5em}
+  .doc h2{font-size:19px;margin:1.6em 0 .5em;padding-top:.6em;border-top:1px solid var(--line)}
+  .doc h2:first-of-type{border-top:0;padding-top:0}
+  .doc table{border-collapse:collapse;width:100%;font-size:13.6px;margin:1em 0}
+  .doc th,.doc td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  .doc th{background:var(--soft);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--brand)}
+  .doc code{background:var(--soft);padding:.12em .4em;border-radius:5px;font-size:12.6px}
+  .doc a{color:var(--brand)}
+
+  .note{color:var(--muted);font-size:13px}
+  .hide{display:none!important}
+  mark{background:#ffe9a8;color:#3d2c00;border-radius:3px;padding:0 2px}
+  .count{font-size:12.5px;color:var(--muted);padding:0 2px 10px}
+
+  @media (max-width:1000px){
+    .wrap{flex-direction:column;gap:16px;padding:16px 14px 60px}
+    nav{position:static;flex:1 1 auto;width:100%;max-height:300px}
+    .script,.doc{padding:20px 16px}
+    .script table{font-size:13px}
+    .script th:nth-child(2){width:auto}
+    .script th,.script td{padding:7px 8px}
+    #q{width:100%}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">NUSI <i>· 50 Video Sales Scripts</i></div>
+  <input id="q" type="search" placeholder="Search all 50 scripts…" aria-label="Search scripts">
+  <div class="seg" id="seg"></div>
+</header>
+
+<div class="wrap">
+  <nav id="nav" aria-label="Script index"></nav>
+  <main id="main"><p class="note">Loading…</p></main>
+</div>
+
+<script>
+const SCRIPT_FILES = ['SCRIPTS_01-15.md','SCRIPTS_16-30.md','SCRIPTS_31-40.md','SCRIPTS_41-50.md'];
+const main=document.getElementById('main'), nav=document.getElementById('nav'),
+      seg=document.getElementById('seg'), q=document.getElementById('q');
+
+// Durations are emoji (surrogate pairs) — match the text, never a char class.
+const LEN = {'30s':['r','Cold ads'], '60s':['y','Retargeting'],
+             '100s':['g','VSL'], '120s':['g','VSL'], '150s':['g','VSL'], '180s':['g','Website']};
+
+(async function(){
+  let overviewMd='', blocks=[];
+  try{
+    const ov = await fetch('SALES_SCRIPTS.md');
+    overviewMd = ov.ok ? await ov.text() : '';
+    for(const f of SCRIPT_FILES){
+      const r = await fetch(f);
+      if(!r.ok) throw new Error(f+' → HTTP '+r.status);
+      parseFile(await r.text(), blocks);
+    }
+  }catch(err){
+    main.innerHTML='<div class="doc"><h1>Could not load the scripts</h1><p class="note">'
+      +String(err).replace(/[<>&]/g,'')+'</p><p class="note">Open this over the local server '
+      +'(<code>http://localhost:4000</code>), not as a file:// path.</p></div>';
+    return;
+  }
+
+  // ---- parse "## Script NN <emoji> 30s — "Title"" plus its bucket + table ----
+  function parseFile(md, out){
+    let bucket='';
+    // Split on h1 (# BUCKET) and h2 (## Script) boundaries, keeping the heading.
+    const lines = md.split('\n');
+    let cur=null, buf=[];
+    const flush=()=>{ if(cur){ cur.body=buf.join('\n').trim(); out.push(cur); } cur=null; buf=[]; };
+    for(const ln of lines){
+      const b = ln.match(/^#\s+BUCKET\s+(\d+)\s+—\s+(.+)$/i);
+      if(b){ flush(); bucket = b[1]+' · '+b[2].trim(); continue; }
+      const s = ln.match(/^##\s+Script\s+(\d+)\s+(\S+)?\s*(\d+s)\s+—\s+(.+)$/);
+      if(s){
+        flush();
+        // Title is quoted, sometimes with a trailing parenthetical: "The Close" (VSL)
+        const tm = s[4].match(/^"([^"]+)"\s*(?:\((.+)\))?/);
+        cur={ n:s[1], dur:s[3], bucket,
+              title: tm ? tm[1] : s[4].replace(/"/g,'').trim(),
+              kind:  tm && tm[2] ? tm[2] : '' };
+        continue;
+      }
+      if(cur) buf.push(ln);
+    }
+    flush();
+  }
+
+  if(!blocks.length){
+    main.innerHTML='<div class="doc"><h1>No scripts parsed</h1><p class="note">'
+      +'The .md headings did not match the expected <code>## Script NN … — "Title"</code> format.</p></div>';
+    return;
+  }
+
+  // ---- render ----
+  main.innerHTML='';
+  const counter=document.createElement('div');
+  counter.className='count'; main.appendChild(counter);
+
+  blocks.forEach(b=>{
+    const [cls,use] = LEN[b.dur] || ['','',''];
+    const sec=document.createElement('section');
+    sec.className='script'; sec.id='s'+b.n;
+    sec.dataset.n=b.n; sec.dataset.bucket=b.bucket;
+    // Avatar / hook lines sit above the table as bold key: value lines.
+    const metaLines=[...b.body.matchAll(/^\*\*(.+?):\*\*\s*(.+)$/gm)]
+      .map(m=>'<b>'+m[1]+':</b> '+m[2]).join(' &nbsp;·&nbsp; ');
+    const table=b.body.slice(b.body.indexOf('| #'));
+    sec.innerHTML =
+      '<div class="shead"><span class="num">'+b.n+'</span>'
+      + '<h2 class="stitle">'+b.title+'</h2>'
+      + '<span class="pill '+cls+'">'+b.dur+'</span>'
+      + (use?'<span class="pill">'+use+'</span>':'')
+      + (b.kind?'<span class="pill">'+b.kind+'</span>':'')
+      + '</div>'
+      + '<div class="meta">'+metaLines+'</div>'
+      + marked.parse(table);
+    main.appendChild(sec);
+  });
+
+  const overview=document.createElement('div');
+  overview.className='doc hide'; overview.id='overview';
+  overview.innerHTML = marked.parse(overviewMd);
+  overview.querySelectorAll('a[href$=".md"]').forEach(a=>a.replaceWith(document.createTextNode(a.textContent)));
+  main.appendChild(overview);
+
+  // ---- sidebar ----
+  let lastBucket='';
+  blocks.forEach(b=>{
+    if(b.bucket!==lastBucket){
+      lastBucket=b.bucket;
+      const d=document.createElement('div'); d.className='bk'; d.textContent=b.bucket; nav.appendChild(d);
+    }
+    const a=document.createElement('a');
+    a.href='#s'+b.n; a.dataset.n=b.n;
+    a.innerHTML='<b>'+b.n+'</b><span>'+b.title+'</span><i>'+b.dur+'</i>';
+    nav.appendChild(a);
+  });
+
+  // ---- filters ----
+  const views=[['All','all'],['30s','30s'],['60s','60s'],['Long','long'],['Overview','ov']];
+  views.forEach(([label,val],i)=>{
+    const btn=document.createElement('button');
+    btn.textContent=label; btn.dataset.v=val;
+    if(!i) btn.classList.add('on');
+    seg.appendChild(btn);
+  });
+  seg.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    apply(b.dataset.v);
+  });
+
+  let view='all';
+  function apply(v){
+    if(v!==undefined) view=v;
+    const term=q.value.trim().toLowerCase();
+    const ov = view==='ov';
+    overview.classList.toggle('hide',!ov);
+    counter.classList.toggle('hide',ov);
+    let shown=0;
+    main.querySelectorAll('.script').forEach(sec=>{
+      let ok=!ov;
+      if(ok && view==='30s') ok = sec.querySelector('.pill').textContent==='30s';
+      if(ok && view==='60s') ok = sec.querySelector('.pill').textContent==='60s';
+      if(ok && view==='long') ok = !['30s','60s'].includes(sec.querySelector('.pill').textContent);
+      if(ok && term) ok = sec.textContent.toLowerCase().includes(term);
+      sec.classList.toggle('hide',!ok);
+      if(ok) shown++;
+    });
+    nav.querySelectorAll('a').forEach(a=>{
+      const sec=document.getElementById('s'+a.dataset.n);
+      a.classList.toggle('hide', ov || sec.classList.contains('hide'));
+    });
+    nav.querySelectorAll('.bk').forEach(h=>{
+      let n=h.nextElementSibling, any=false;
+      while(n && n.classList.contains('bk')===false){ if(!n.classList.contains('hide')) any=true; n=n.nextElementSibling; }
+      h.classList.toggle('hide',!any);
+    });
+    counter.textContent = shown+(shown===1?' script':' scripts')
+      +(term?' matching "'+q.value.trim()+'"':'')+'.';
+    // highlight
+    main.querySelectorAll('mark').forEach(m=>m.replaceWith(document.createTextNode(m.textContent)));
+    if(term) main.querySelectorAll('.script:not(.hide) td').forEach(td=>{
+      if(!td.children.length && td.textContent.toLowerCase().includes(term))
+        td.innerHTML = td.textContent.replace(new RegExp('('+term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>');
+    });
+  }
+  let t; q.addEventListener('input',()=>{clearTimeout(t);t=setTimeout(()=>apply(),150)});
+  apply('all');
+
+  // ---- scrollspy ----
+  const obs=new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      if(!e.isIntersecting) return;
+      const link=nav.querySelector('a[data-n="'+e.target.dataset.n+'"]'); if(!link) return;
+      nav.querySelectorAll('a').forEach(a=>a.classList.remove('on'));
+      link.classList.add('on');
+      if(link.offsetTop<nav.scrollTop||link.offsetTop>nav.scrollTop+nav.clientHeight-40)
+        nav.scrollTo({top:link.offsetTop-120,behavior:'smooth'});
+    });
+  },{rootMargin:'-70px 0px -72% 0px'});
+  main.querySelectorAll('.script').forEach(s=>obs.observe(s));
+})();
+</script>
+</body>
+</html>
