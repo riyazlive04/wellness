@@ -27,11 +27,21 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { Audit } from './audit/audit.decorator';
 
 const STATUSES = ['draft', 'ready', 'produced', 'retired'] as const;
 type Status = (typeof STATUSES)[number];
+
+/**
+ * Prisma's Json input type rejects an array of class instances — a validated
+ * DTO has no string index signature. Flatten to plain objects before writing,
+ * which also drops anything class-transformer attached to the instance.
+ */
+function toJsonLines(lines?: ScriptLineDto[]): Prisma.InputJsonValue {
+  return (lines ?? []).map((l) => ({ n: l.n, vo: l.vo, on_screen: l.on_screen }));
+}
 
 /** One row of the shot table. */
 class ScriptLineDto {
@@ -149,7 +159,7 @@ export class AdminVideoScriptsController {
   async create(@Body() dto: CreateVideoScriptDto) {
     await this.assertNumberFree(dto.number);
     return this.prisma.video_scripts.create({
-      data: { ...dto, lines: dto.lines ?? [] },
+      data: { ...dto, lines: toJsonLines(dto.lines) },
     });
   }
 
@@ -171,7 +181,13 @@ export class AdminVideoScriptsController {
       await this.assertNumberFree(dto.number);
     }
 
-    return this.prisma.video_scripts.update({ where: { id }, data: dto });
+    const { lines, ...rest } = dto;
+    return this.prisma.video_scripts.update({
+      where: { id },
+      // Only touch `lines` when the caller actually sent it — a PATCH that
+      // carries just `status` must not blank the script.
+      data: lines === undefined ? rest : { ...rest, lines: toJsonLines(lines) },
+    });
   }
 
   @Delete(':id')
@@ -208,7 +224,7 @@ export class AdminVideoScriptsController {
       const existing = await this.prisma.video_scripts.findUnique({
         where: { number: s.number },
       });
-      const data = { ...s, lines: s.lines ?? [] };
+      const data = { ...s, lines: toJsonLines(s.lines) };
 
       if (existing) {
         await this.prisma.video_scripts.update({ where: { number: s.number }, data });
