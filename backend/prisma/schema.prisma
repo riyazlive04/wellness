@@ -3344,3 +3344,29 @@ model notifications {
   @@index([recipient_client_id, created_at])
   @@schema("public")
 }
+
+/// Sirah Digital's marketing video scripts. Platform-owned (no workspace_id),
+/// super-admin only. Seeded once from films/sirah-life/*.md; the database is
+/// the source of truth after that.
+model video_scripts {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  number           Int      @unique
+  title            String
+  bucket           Int
+  bucket_title     String
+  duration_seconds Int
+  kind             String?
+  avatar           String?
+  hook_type        String?
+  /// [{ n, vo, on_screen }] — written as one whole document, never row by row.
+  lines            Json     @default("[]")
+  status           String   @default("draft")
+  notes            String?
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([number])
+  @@index([bucket, number])
+  @@index([status])
+  @@schema("public")
+}

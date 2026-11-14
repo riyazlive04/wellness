@@ -4,6 +4,7 @@ import { AuthModule } from '../auth/auth.module';
 import { PushModule } from '../clients/push.module';
 import { ConnectionsModule } from '../connections/connections.module';
 import { AnnouncementsController } from './admin-announcements.controller';
+import { AdminVideoScriptsController } from './admin-video-scripts.controller';
 import { AdminConfigController } from './admin-config.controller';
 import { AdminPushController } from './admin-push.controller';
 import { AdminUsersController } from './admin-users.controller';
@@ -36,6 +37,7 @@ import { AuditService } from './audit/audit.service';
     AdminWorkspaceWhatsappController,
     AdminUsersController,
     AnnouncementsController,
+    AdminVideoScriptsController,
     AdminConfigController,
     AdminAuditController,
     AdminPushController,

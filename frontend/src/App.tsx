@@ -124,6 +124,7 @@ const AdminTeam          = lazyWithPreload(() => import("./pages/sirah/admin/Adm
 // restoring this import and its <Route path="audit"> brings the page back.
 const AdminLeads         = lazyWithPreload(() => import("./pages/sirah/admin/AdminLeads"));
 const NusiSalesSop       = lazyWithPreload(() => import("./pages/sirah/admin/sop/NusiSalesSop"));
+const AdminVideoScripts  = lazyWithPreload(() => import("./pages/sirah/admin/AdminVideoScripts"));
 const AdminRetention     = lazyWithPreload(() => import("./pages/sirah/admin/AdminRetention"));
 const AdminReminders     = lazyWithPreload(() => import("./pages/sirah/admin/AdminReminders"));
 const AdminAnnouncements = lazyWithPreload(() => import("./pages/sirah/admin/AdminAnnouncements"));
@@ -394,6 +395,7 @@ const App = () => (
                   <Route path="announcements"        element={<AdminAnnouncements />} />
                   <Route path="leads"                element={<AdminLeads />} />
                   <Route path="sop"                  element={<NusiSalesSop />} />
+                  <Route path="video-scripts"        element={<AdminVideoScripts />} />
                   <Route path="retention"            element={<AdminRetention />} />
                   <Route path="reminders"            element={<AdminReminders />} />
                   <Route path="health"               element={<AdminHealth />} />

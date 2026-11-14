@@ -1,0 +1,72 @@
+NUSI — Film 05 "Audit Your Own Practice"
+Voice: [?] Indian-English female, mid-30s. Tone: a peer who has run a practice.
+Speed: 0.95. Numbers are spelled out so the engine reads them correctly.
+Pauses marked [PAUSE Xs] are mandatory and are part of the script, not slack.
+
+---
+
+I am going to ask you five questions about your practice.
+Answer honestly. Nobody is watching.
+
+[PAUSE 1s]
+
+One. Without opening anything, how many active clients do you have right now?
+
+[PAUSE 3s]
+
+Two. How many of them have not logged a meal in seven days?
+
+[PAUSE 3s]
+
+Three. Which client's payment failed last month?
+
+[PAUSE 3s]
+
+Four. What is your monthly recurring revenue? This month, not last quarter.
+
+[PAUSE 3s]
+
+Five. If you stopped working for two weeks, would your clients still be following their plans?
+
+[PAUSE 4s]
+
+If you could not answer those in ten seconds, you do not have a practice problem.
+You have an instrumentation problem.
+
+[PAUSE 1s]
+
+You are a good clinician running on tools that were never built to run a clinic.
+
+Here is what the same five questions look like inside NUSI.
+
+Active clients: on the overview, live.
+
+Who has gone quiet: the clients-needing-attention roll-up, with an at-risk list ranked by days silent.
+
+Failed payments: dunning handles the retry, and tells you before the client churns.
+
+Revenue: the MRR breakdown, with the trend.
+
+And if you disappear for two weeks, your programs keep running.
+Daily tasks still land. Habits still streak. Automations still nudge.
+
+[PAUSE 2s]
+
+That last one is the whole product, really.
+
+Because a plan a client follows is worth ten plans you wrote beautifully.
+
+NUSI is built for Indian practices specifically.
+IFCT-2017 food data with cooking-retention science, so cooked dal is not counted as raw dal.
+GST-compliant invoices. Razorpay subscriptions. WhatsApp notifications. Rupee pricing.
+
+Starter is three thousand nine hundred and ninety-nine a month, for a hundred clients.
+Growth is eight thousand nine hundred and ninety-nine, for five hundred clients, five team members, and five thousand AI credits a month.
+Scale Pro is nineteen thousand nine hundred and ninety-nine, for unlimited clients and team.
+
+Fourteen days free. No card.
+
+Ask yourself those five questions again in two weeks.
+See if the answers come faster.
+
+nusi.in
