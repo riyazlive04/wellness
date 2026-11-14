@@ -81,12 +81,12 @@ export default function AdminVideoScripts() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'video-scripts'],
-    queryFn: () => api.get<{ items: VideoScript[] }>('/admin/video-scripts'),
+    queryFn: () => api.get<{ items: VideoScript[] }>('/api/v1/admin/video-scripts'),
   });
 
   const save = useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: Partial<VideoScript> }) =>
-      api.patch<VideoScript>(`/admin/video-scripts/${id}`, { body: patch }),
+      api.patch<VideoScript>(`/api/v1/admin/video-scripts/${id}`, { body: patch }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'video-scripts'] });
       toast.success('Script saved');
